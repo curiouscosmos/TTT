@@ -1,0 +1,7 @@
+{
+  "name": "ttt",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter api dev & pnpm --filter mobile ios"
+  }
+}
