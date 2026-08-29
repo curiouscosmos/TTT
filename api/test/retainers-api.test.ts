@@ -74,6 +74,72 @@ describe("retainers api", () => {
     expect(response.body[0].latestCheckInDate).toEqual(expect.any(String));
   });
 
+  it("lists only at-risk retainers ordered by severity then oldest latest check-in", async () => {
+    const oldRed = await createRetainer("Old Red", "Dana");
+    const newRed = await createRetainer("New Red", "Sam");
+    const oldAmber = await createRetainer("Old Amber", "Riley");
+    const newAmber = await createRetainer("New Amber", "Jo");
+    const green = await createRetainer("Green", "Lee");
+
+    await prisma.checkIn.createMany({
+      data: [
+        {
+          retainerId: oldRed.id,
+          date: new Date("2026-08-01T12:00:00.000Z"),
+          summary: "Old red.",
+          ragStatus: "red",
+        },
+        {
+          retainerId: newRed.id,
+          date: new Date("2026-08-20T12:00:00.000Z"),
+          summary: "New red.",
+          ragStatus: "red",
+        },
+        {
+          retainerId: oldAmber.id,
+          date: new Date("2026-08-20T11:00:00.000Z"),
+          summary: "Old amber.",
+          ragStatus: "amber",
+        },
+        {
+          retainerId: newAmber.id,
+          date: new Date(),
+          summary: "New amber.",
+          ragStatus: "amber",
+        },
+        {
+          retainerId: green.id,
+          date: new Date(),
+          summary: "Green.",
+          ragStatus: "green",
+        },
+      ],
+    });
+
+    const response = await request(app)
+      .get("/api/v1/retainers/at-risk")
+      .set("Accept", "application/json")
+      .expect("Content-Type", /json/)
+      .expect(200);
+
+    expect(response.body.map((retainer: { clientName: string }) => retainer.clientName)).toEqual([
+      "Old Red",
+      "New Red",
+      "Old Amber",
+      "New Amber",
+    ]);
+    expect(response.body[0]).toEqual({
+      id: oldRed.id,
+      clientName: "Old Red",
+      leadEngineer: "Dana",
+      latestCheckInDate: "2026-08-01T12:00:00.000Z",
+      health: {
+        status: "red",
+        reason: "The most recent check-in is red.",
+      },
+    });
+  });
+
   it("returns retainer detail with recent check-ins and health reason", async () => {
     const retainer = await createRetainer();
     await prisma.checkIn.createMany({
@@ -271,12 +337,12 @@ describe("retainers api", () => {
   });
 });
 
-function createRetainer() {
+function createRetainer(clientName = "Acme Co", leadEngineer = "Dana") {
   return prisma.retainer.create({
     data: {
-      clientName: "Acme Co",
+      clientName,
       startDate: new Date("2026-08-01T00:00:00.000Z"),
-      leadEngineer: "Dana",
+      leadEngineer,
     },
   });
 }

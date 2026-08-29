@@ -30,6 +30,10 @@ router.get("/", async (req, res) => {
   res.json(await retainers.listRetainers());
 });
 
+router.get("/at-risk", async (req, res) => {
+  res.json(await retainers.listAtRiskRetainers());
+});
+
 router.get("/:id", async (req, res) => {
   res.json(await retainers.getRetainer(req.params.id));
 });

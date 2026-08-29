@@ -43,6 +43,28 @@ export async function listRetainers() {
   return retainers.map(toRetainerSummary);
 }
 
+export async function listAtRiskRetainers() {
+  const summaries = await listRetainers();
+  const severity = {
+    red: 0,
+    amber: 1,
+    green: 2,
+  };
+
+  return summaries
+    .filter(retainer => retainer.health.status !== "green")
+    .sort((a, b) =>
+      severity[a.health.status] - severity[b.health.status]
+      || latestCheckInMs(a.latestCheckInDate) - latestCheckInMs(b.latestCheckInDate))
+    .map(({ id, clientName, leadEngineer, latestCheckInDate, health }) => ({
+      id,
+      clientName,
+      leadEngineer,
+      latestCheckInDate,
+      health,
+    }));
+}
+
 export async function getRetainer(id: string) {
   const retainer = await prisma.retainer.findUnique({
     where: {
@@ -145,6 +167,10 @@ function toCheckInResponse(checkIn: RetainerWithCheckIns["checkIns"][number]) {
     riskNote: checkIn.riskNote,
     createdAt: checkIn.createdAt,
   };
+}
+
+function latestCheckInMs(date: Date | null) {
+  return date?.getTime() ?? 0;
 }
 
 function isRecordNotFound(error: unknown) {
