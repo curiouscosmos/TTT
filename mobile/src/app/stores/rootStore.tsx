@@ -1,11 +1,11 @@
 import { createContext, PropsWithChildren, useContext, useMemo } from 'react';
 
-import { UiStore } from '@/app/stores/uiStore';
+import { RetainerListStore } from '@/app/stores/retainerListStore';
 
 class RootStore {
   // MobX is reserved for local UI state. Retainers, check-ins, and API loading
   // state stay in TanStack Query so there is one server-state owner.
-  ui = new UiStore();
+  retainerList = new RetainerListStore();
 }
 
 const StoreContext = createContext<RootStore | null>(null);
