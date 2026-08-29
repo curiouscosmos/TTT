@@ -13,14 +13,14 @@
   "scripts": {
     "start": "node --env-file=.env dist/src/index.js",
     "dev": "tsx watch --env-file=.env src/index.ts",
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "db:generate": "prisma generate",
     "db:deploy": "prisma migrate deploy",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "lint": "eslint --fix src test",
-    "test": "vitest run",
+    "test": "vitest run --dir test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -228,6 +228,18 @@ describe("retainers api", () => {
       .expect("Content-Type", /json/)
       .expect(400));
 
+  it("returns 400 when create input uses non-string dates", () =>
+    request(app)
+      .post("/api/v1/retainers")
+      .send({
+        clientName: "Beta LLC",
+        startDate: null,
+        leadEngineer: "Sam",
+      })
+      .set("Accept", "application/json")
+      .expect("Content-Type", /json/)
+      .expect(400));
+
   it("updates retainer fields", async () => {
     const retainer = await createRetainer();
 
@@ -305,6 +317,21 @@ describe("retainers api", () => {
         date: "not-a-date",
         summary: "",
         ragStatus: "blue",
+      })
+      .set("Accept", "application/json")
+      .expect("Content-Type", /json/)
+      .expect(400);
+  });
+
+  it("returns 400 when check-in input uses non-string dates", async () => {
+    const retainer = await createRetainer();
+
+    return request(app)
+      .post(`/api/v1/retainers/${retainer.id}/check-ins`)
+      .send({
+        date: null,
+        summary: "Weekly update.",
+        ragStatus: "green",
       })
       .set("Accept", "application/json")
       .expect("Content-Type", /json/)

@@ -6,10 +6,11 @@ import * as retainers from "../services/retainers.js";
 const router = express.Router();
 
 const statusSchema = z.enum(["active", "archived"]);
+const dateStringSchema = z.string().trim().min(1).pipe(z.coerce.date());
 
 const createRetainerSchema = z.object({
   clientName: z.string().trim().min(1),
-  startDate: z.coerce.date(),
+  startDate: dateStringSchema,
   status: statusSchema.optional(),
   leadEngineer: z.string().trim().min(1),
 });
@@ -20,7 +21,7 @@ const updateRetainerSchema = createRetainerSchema.partial().refine(
 );
 
 const createCheckInSchema = z.object({
-  date: z.coerce.date(),
+  date: dateStringSchema,
   summary: z.string().trim().min(1),
   ragStatus: z.enum(["green", "amber", "red"]),
   riskNote: z.string().trim().min(1).optional(),

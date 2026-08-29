@@ -103,14 +103,23 @@ export async function createCheckIn(retainerId: string, data: Omit<Prisma.CheckI
     throw new NotFoundError("Retainer not found.");
   }
 
-  const checkIn = await prisma.checkIn.create({
-    data: {
-      ...data,
-      retainerId,
-    },
-  });
+  try {
+    const checkIn = await prisma.checkIn.create({
+      data: {
+        ...data,
+        retainerId,
+      },
+    });
 
-  return toCheckInResponse(checkIn);
+    return toCheckInResponse(checkIn);
+  }
+  catch (error) {
+    if (isRecordNotFound(error)) {
+      throw new NotFoundError("Retainer not found.");
+    }
+
+    throw error;
+  }
 }
 
 export async function updateRetainer(id: string, data: Prisma.RetainerUpdateInput) {
@@ -174,5 +183,5 @@ function latestCheckInMs(date: Date | null) {
 }
 
 function isRecordNotFound(error: unknown) {
-  return error instanceof Error && "code" in error && error.code === "P2025";
+  return error instanceof Error && "code" in error && (error.code === "P2025" || error.code === "P2003");
 }
