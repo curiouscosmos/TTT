@@ -12,6 +12,8 @@
   },
   "include": [
     "./*.js",
+    "prisma.config.ts",
+    "prisma/**/*.ts",
     "src/**/*.ts",
     "test/**/*.ts"
   ]

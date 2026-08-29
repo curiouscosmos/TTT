@@ -82,3 +82,7 @@ dist/
 *.tsbuildinfo
 tmp/
 temp/
+
+# Local SQLite databases
+*.db
+*.db-*

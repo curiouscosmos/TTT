@@ -16,6 +16,7 @@
     "build": "tsc",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "lint": "eslint --fix src test",
     "test": "vitest run",
