@@ -19,6 +19,13 @@ const updateRetainerSchema = createRetainerSchema.partial().refine(
   "At least one field is required.",
 );
 
+const createCheckInSchema = z.object({
+  date: z.coerce.date(),
+  summary: z.string().trim().min(1),
+  ragStatus: z.enum(["green", "amber", "red"]),
+  riskNote: z.string().trim().min(1).optional(),
+});
+
 router.get("/", async (req, res) => {
   res.json(await retainers.listRetainers());
 });
@@ -30,6 +37,11 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   const data = createRetainerSchema.parse(req.body);
   res.status(201).json(await retainers.createRetainer(data));
+});
+
+router.post("/:retainerId/check-ins", async (req, res) => {
+  const data = createCheckInSchema.parse(req.body);
+  res.status(201).json(await retainers.createCheckIn(req.params.retainerId, data));
 });
 
 router.patch("/:id", async (req, res) => {

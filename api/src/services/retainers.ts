@@ -67,6 +67,30 @@ export async function createRetainer(data: Prisma.RetainerCreateInput) {
   return toRetainerDetail(retainer);
 }
 
+export async function createCheckIn(retainerId: string, data: Omit<Prisma.CheckInUncheckedCreateInput, "retainerId">) {
+  const retainer = await prisma.retainer.findUnique({
+    where: {
+      id: retainerId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!retainer) {
+    throw new NotFoundError("Retainer not found.");
+  }
+
+  const checkIn = await prisma.checkIn.create({
+    data: {
+      ...data,
+      retainerId,
+    },
+  });
+
+  return toCheckInResponse(checkIn);
+}
+
 export async function updateRetainer(id: string, data: Prisma.RetainerUpdateInput) {
   try {
     const retainer = await prisma.retainer.update({
@@ -107,15 +131,19 @@ function toRetainerDetail(retainer: RetainerWithCheckIns) {
     ...toRetainerSummary(retainer),
     createdAt: retainer.createdAt,
     updatedAt: retainer.updatedAt,
-    checkIns: retainer.checkIns.map(checkIn => ({
-      id: checkIn.id,
-      retainerId: checkIn.retainerId,
-      date: checkIn.date,
-      summary: checkIn.summary,
-      ragStatus: checkIn.ragStatus,
-      riskNote: checkIn.riskNote,
-      createdAt: checkIn.createdAt,
-    })),
+    checkIns: retainer.checkIns.map(toCheckInResponse),
+  };
+}
+
+function toCheckInResponse(checkIn: RetainerWithCheckIns["checkIns"][number]) {
+  return {
+    id: checkIn.id,
+    retainerId: checkIn.retainerId,
+    date: checkIn.date,
+    summary: checkIn.summary,
+    ragStatus: checkIn.ragStatus,
+    riskNote: checkIn.riskNote,
+    createdAt: checkIn.createdAt,
   };
 }
 

@@ -191,6 +191,84 @@ describe("retainers api", () => {
       .set("Accept", "application/json")
       .expect("Content-Type", /json/)
       .expect(404));
+
+  it("creates a check-in for an existing retainer", async () => {
+    const retainer = await createRetainer();
+
+    const response = await request(app)
+      .post(`/api/v1/retainers/${retainer.id}/check-ins`)
+      .send({
+        date: "2026-08-29T12:00:00.000Z",
+        summary: "Weekly update.",
+        ragStatus: "green",
+        riskNote: "Watch staffing.",
+      })
+      .set("Accept", "application/json")
+      .expect("Content-Type", /json/)
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      retainerId: retainer.id,
+      summary: "Weekly update.",
+      ragStatus: "green",
+      riskNote: "Watch staffing.",
+    });
+    expect(response.body.id).toEqual(expect.any(String));
+    expect(response.body.date).toEqual("2026-08-29T12:00:00.000Z");
+    expect(response.body.createdAt).toEqual(expect.any(String));
+  });
+
+  it("returns 404 when creating a check-in for a missing retainer", () =>
+    request(app)
+      .post("/api/v1/retainers/missing/check-ins")
+      .send({
+        date: "2026-08-29T12:00:00.000Z",
+        summary: "Weekly update.",
+        ragStatus: "green",
+      })
+      .set("Accept", "application/json")
+      .expect("Content-Type", /json/)
+      .expect(404));
+
+  it("returns 400 for invalid check-in input", async () => {
+    const retainer = await createRetainer();
+
+    return request(app)
+      .post(`/api/v1/retainers/${retainer.id}/check-ins`)
+      .send({
+        date: "not-a-date",
+        summary: "",
+        ragStatus: "blue",
+      })
+      .set("Accept", "application/json")
+      .expect("Content-Type", /json/)
+      .expect(400);
+  });
+
+  it("derives updated health after creating a red check-in", async () => {
+    const retainer = await createRetainer();
+
+    await request(app)
+      .post(`/api/v1/retainers/${retainer.id}/check-ins`)
+      .send({
+        date: new Date().toISOString(),
+        summary: "Blocked by a production issue.",
+        ragStatus: "red",
+      })
+      .set("Accept", "application/json")
+      .expect(201);
+
+    const response = await request(app)
+      .get(`/api/v1/retainers/${retainer.id}`)
+      .set("Accept", "application/json")
+      .expect("Content-Type", /json/)
+      .expect(200);
+
+    expect(response.body.health).toEqual({
+      status: "red",
+      reason: "The most recent check-in is red.",
+    });
+  });
 });
 
 function createRetainer() {
