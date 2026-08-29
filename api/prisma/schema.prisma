@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Retainer {
+  id           String         @id @default(cuid())
+  clientName   String
+  startDate    DateTime
+  status       RetainerStatus @default(active)
+  leadEngineer String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  checkIns     CheckIn[]
+
+  @@index([status])
+}
+
+model CheckIn {
+  id         String    @id @default(cuid())
+  retainerId String
+  retainer   Retainer  @relation(fields: [retainerId], references: [id], onDelete: Cascade)
+  date       DateTime
+  summary    String
+  ragStatus  RagStatus
+  riskNote   String?
+  createdAt  DateTime  @default(now())
+
+  @@index([retainerId])
+  @@index([date])
+}
+
+enum RetainerStatus {
+  active
+  archived
+}
+
+enum RagStatus {
+  green
+  amber
+  red
+}
