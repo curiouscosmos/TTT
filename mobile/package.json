@@ -18,6 +18,8 @@
     "expo-symbols": "~57.0.2",
     "expo-system-ui": "~57.0.3",
     "expo-web-browser": "~57.0.2",
+    "mobx": "^7.0.3",
+    "mobx-react-lite": "^5.0.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.86.0",
@@ -32,6 +34,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~57.0.2",
     "typescript": "~6.0.3"
   },
   "scripts": {
