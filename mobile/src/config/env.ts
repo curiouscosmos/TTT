@@ -1,7 +1,11 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  EXPO_PUBLIC_API_URL: z.string().url().transform((url) => url.replace(/\/$/, '')),
+  EXPO_PUBLIC_API_URL: z
+    .string()
+    .url()
+    .default('http://localhost:3000')
+    .transform((url) => url.replace(/\/$/, '')),
 });
 
 const parsedEnv = envSchema.parse({
