@@ -55,3 +55,25 @@ pnpm run test
 ```
 pnpm run dev
 ```
+
+## Docker
+
+From the repository root:
+
+```sh
+docker compose up --build
+```
+
+The API is exposed on `http://localhost:3000` by default. Override the host port with `API_PORT`:
+
+```sh
+API_PORT=4000 docker compose up
+```
+
+Prisma migrations run when the container starts. SQLite data is stored in the `api-sqlite-data` Docker volume.
+
+Seed demo data after the API container is running:
+
+```sh
+docker compose exec api pnpm run db:seed
+```

@@ -15,6 +15,7 @@
     "dev": "tsx watch --env-file=.env src/index.ts",
     "build": "tsc",
     "db:generate": "prisma generate",
+    "db:deploy": "prisma migrate deploy",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",

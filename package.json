@@ -1,6 +1,14 @@
 {
   "name": "ttt",
   "private": true,
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "better-sqlite3",
+      "prisma"
+    ]
+  },
   "scripts": {
     "dev": "pnpm --filter api dev & pnpm --filter mobile ios"
   }
