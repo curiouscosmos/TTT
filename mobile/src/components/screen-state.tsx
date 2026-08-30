@@ -37,6 +37,23 @@ export function ErrorState({
   );
 }
 
+export function InlineErrorState({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
+  return (
+    <View style={styles.inlineError}>
+      <ThemedText type="small" themeColor="textSecondary" style={styles.inlineErrorText}>
+        {message}
+      </ThemedText>
+      <ActionButton label="Retry" onPress={onRetry} />
+    </View>
+  );
+}
+
 export function EmptyState({
   title,
   message,
@@ -98,5 +115,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 44,
     paddingHorizontal: Spacing.three,
+  },
+  inlineError: {
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingBottom: Spacing.two,
+  },
+  inlineErrorText: {
+    textAlign: 'center',
   },
 });

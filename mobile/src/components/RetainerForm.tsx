@@ -48,6 +48,13 @@ export function RetainerForm({
     defaultValues,
     resolver: zodResolver(RetainerFormSchema),
   });
+  const submit = handleSubmit((values) => {
+    if (isSubmitting) return;
+
+    // mutation.isPending disables the button for feedback, and this guard
+    // closes the small double-tap window before React renders disabled=true.
+    onSubmit(values);
+  });
 
   return (
     <ThemedView style={styles.container}>
@@ -158,7 +165,7 @@ export function RetainerForm({
             <SubmitButton
               label={isSubmitting ? 'Saving...' : submitLabel}
               disabled={isSubmitting}
-              onPress={handleSubmit(onSubmit)}
+              onPress={submit}
             />
             {onCancel ? (
               <SecondaryButton label={cancelLabel} onPress={() => onCancel(isDirty)} />

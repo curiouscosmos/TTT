@@ -6,6 +6,7 @@ import {
   FlatList,
   Modal,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Switch,
   TextInput,
@@ -18,7 +19,7 @@ import { getQueryErrorMessage } from '@/api/errors';
 import { queryKeys } from '@/api/queryKeys';
 import { useRootStore } from '@/app/stores/rootStore';
 import type { HealthFilter, RetainerListSortMode } from '@/app/stores/retainerListStore';
-import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
+import { EmptyState, ErrorState, InlineErrorState, LoadingState } from '@/components/screen-state';
 import { StatusBadge } from '@/components/status-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -54,7 +55,8 @@ const RetainerListScreen = observer(function RetainerListScreen() {
   const { retainerList } = useRootStore();
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filterDraft, setFilterDraft] = useState<FilterDraft>(defaultFilterDraft);
-  const { data = [], error, isLoading, isRefetching, refetch } = useQuery({
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { data = [], error, isFetching, isPending, refetch } = useQuery({
     queryKey: queryKeys.retainers.list(),
     queryFn: listRetainers,
   });
@@ -106,8 +108,10 @@ const RetainerListScreen = observer(function RetainerListScreen() {
   const keyExtractor = useCallback((item: RetainerSummary) => item.id, []);
 
   const onRefresh = useCallback(() => {
-    // Pull-to-refresh refetches the same query so cache state and observers stay in sync.
-    void refetch();
+    setIsRefreshing(true);
+    // Pull-to-refresh is user-initiated, so it gets its own spinner instead of
+    // reusing isFetching, which also becomes true for background refetches.
+    void refetch().finally(() => setIsRefreshing(false));
   }, [refetch]);
 
   const openFilterModal = useCallback(() => {
@@ -133,7 +137,9 @@ const RetainerListScreen = observer(function RetainerListScreen() {
     setIsFilterModalOpen(false);
   }, [filterDraft, retainerList]);
 
-  if (isLoading) {
+  // TanStack Query v5 can be fetching with cached data. isPending is the
+  // initial no-data state; isFetching below is only non-blocking background work.
+  if (isPending) {
     return (
       <ScreenShell>
         <LoadingState message="Loading retainers..." />
@@ -141,7 +147,7 @@ const RetainerListScreen = observer(function RetainerListScreen() {
     );
   }
 
-  if (error) {
+  if (error && data.length === 0) {
     return (
       <ScreenShell>
         <ErrorState
@@ -197,8 +203,16 @@ const RetainerListScreen = observer(function RetainerListScreen() {
             />
           )
         }
-        refreshing={isRefetching && !isLoading}
-        onRefresh={onRefresh}
+        ListHeaderComponent={
+          error && data.length > 0 ? (
+            <InlineErrorState message={getQueryErrorMessage(error)} onRetry={() => void refetch()} />
+          ) : isFetching && !isRefreshing ? (
+            <ThemedText type="small" themeColor="textSecondary" style={styles.backgroundStatus}>
+              Refreshing...
+            </ThemedText>
+          ) : null
+        }
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
         initialNumToRender={12}
         maxToRenderPerBatch={12}
         windowSize={7}
@@ -486,6 +500,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
+  },
+  backgroundStatus: {
+    paddingBottom: Spacing.two,
+    textAlign: 'center',
   },
   controlGroup: {
     gap: Spacing.two,

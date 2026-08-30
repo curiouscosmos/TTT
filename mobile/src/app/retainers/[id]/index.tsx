@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getRetainer } from '@/api/client';
 import { getQueryErrorMessage } from '@/api/errors';
 import { queryKeys } from '@/api/queryKeys';
-import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
+import { EmptyState, ErrorState, InlineErrorState, LoadingState } from '@/components/screen-state';
 import { StatusBadge } from '@/components/status-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -19,11 +20,16 @@ export default function RetainerDetailScreen() {
   // Expo Router can surface repeated params as arrays. This route only accepts
   // one retainer id, so normalize before building query keys or API paths.
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
-  const { data, error, isLoading, refetch } = useQuery({
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { data, error, isFetching, isPending, refetch } = useQuery({
     queryKey: id ? queryKeys.retainers.detail(id) : queryKeys.retainers.detail('missing-id'),
     queryFn: () => getRetainer(id ?? ''),
     enabled: Boolean(id),
   });
+  const onRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    void refetch().finally(() => setIsRefreshing(false));
+  }, [refetch]);
 
   if (!id) {
     return (
@@ -33,7 +39,7 @@ export default function RetainerDetailScreen() {
     );
   }
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <ScreenShell>
         <LoadingState message="Loading retainer..." />
@@ -41,7 +47,7 @@ export default function RetainerDetailScreen() {
     );
   }
 
-  if (error || !data) {
+  if ((error && !data) || !data) {
     return (
       <ScreenShell>
         <ErrorState
@@ -55,14 +61,51 @@ export default function RetainerDetailScreen() {
     );
   }
 
-  return <RetainerDetailContent retainer={data} />;
+  return (
+    <RetainerDetailContent
+      retainer={data}
+      isFetching={isFetching}
+      isRefreshing={isRefreshing}
+      refetchError={error}
+      onRefresh={onRefresh}
+      onRetry={() => void refetch()}
+    />
+  );
 }
 
-function RetainerDetailContent({ retainer }: { retainer: RetainerDetail }) {
+function RetainerDetailContent({
+  retainer,
+  isFetching,
+  isRefreshing,
+  refetchError,
+  onRefresh,
+  onRetry,
+}: {
+  retainer: RetainerDetail;
+  isFetching: boolean;
+  isRefreshing: boolean;
+  refetchError: unknown;
+  onRefresh: () => void;
+  onRetry: () => void;
+}) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}>
+          {refetchError ? (
+            <InlineErrorState
+              message={getQueryErrorMessage(refetchError, {
+                notFoundMessage: 'The requested retainer could not be found.',
+              })}
+              onRetry={onRetry}
+            />
+          ) : isFetching && !isRefreshing ? (
+            <ThemedText type="small" themeColor="textSecondary" style={styles.backgroundStatus}>
+              Refreshing...
+            </ThemedText>
+          ) : null}
           <View style={styles.header}>
             <ThemedText type="subtitle">{retainer.clientName}</ThemedText>
             <View style={styles.actionRow}>
@@ -208,6 +251,9 @@ const styles = StyleSheet.create({
   },
   header: {
     gap: Spacing.three,
+  },
+  backgroundStatus: {
+    textAlign: 'center',
   },
   actionRow: {
     flexDirection: 'row',

@@ -58,7 +58,7 @@ export default function EditRetainerScreen() {
     );
   }
 
-  if (query.isLoading) {
+  if (query.isPending) {
     return (
       <ScreenShell>
         <LoadingState message="Loading retainer..." />

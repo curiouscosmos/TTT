@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useCallback } from 'react';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listAtRiskRetainers } from '@/api/client';
 import { getQueryErrorMessage } from '@/api/errors';
 import { queryKeys } from '@/api/queryKeys';
-import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
+import { EmptyState, ErrorState, InlineErrorState, LoadingState } from '@/components/screen-state';
 import { StatusBadge } from '@/components/status-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -16,7 +16,8 @@ import { useTheme } from '@/hooks/use-theme';
 import type { AtRiskRetainer } from '@/types/api';
 
 export default function AtRiskScreen() {
-  const { data = [], error, isLoading, isRefetching, refetch } = useQuery({
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { data = [], error, isFetching, isPending, refetch } = useQuery({
     // This endpoint has different membership and ordering than the full list,
     // so it gets a dedicated key and can be invalidated independently.
     queryKey: queryKeys.retainers.atRisk,
@@ -37,11 +38,11 @@ export default function AtRiskScreen() {
   const keyExtractor = useCallback((item: AtRiskRetainer) => item.id, []);
 
   const onRefresh = useCallback(() => {
-    // Pull-to-refresh refetches this query so the existing cache updates in place.
-    void refetch();
+    setIsRefreshing(true);
+    void refetch().finally(() => setIsRefreshing(false));
   }, [refetch]);
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <ScreenShell>
         <LoadingState message="Loading at-risk retainers..." />
@@ -49,7 +50,7 @@ export default function AtRiskScreen() {
     );
   }
 
-  if (error) {
+  if (error && data.length === 0) {
     return (
       <ScreenShell>
         <ErrorState
@@ -75,9 +76,17 @@ export default function AtRiskScreen() {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={Separator}
+        ListHeaderComponent={
+          error && data.length > 0 ? (
+            <InlineErrorState message={getQueryErrorMessage(error)} onRetry={() => void refetch()} />
+          ) : isFetching && !isRefreshing ? (
+            <ThemedText type="small" themeColor="textSecondary" style={styles.backgroundStatus}>
+              Refreshing...
+            </ThemedText>
+          ) : null
+        }
         ListEmptyComponent={<EmptyState title="No retainers currently need attention." />}
-        refreshing={isRefetching && !isLoading}
-        onRefresh={onRefresh}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
         initialNumToRender={12}
         maxToRenderPerBatch={12}
         windowSize={7}
@@ -148,6 +157,10 @@ const styles = StyleSheet.create({
   header: {
     gap: Spacing.one,
     paddingVertical: Spacing.three,
+  },
+  backgroundStatus: {
+    paddingBottom: Spacing.two,
+    textAlign: 'center',
   },
   listContent: {
     flexGrow: 1,

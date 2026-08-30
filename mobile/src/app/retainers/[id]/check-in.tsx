@@ -60,6 +60,11 @@ export default function AddCheckInScreen() {
     },
     resolver: zodResolver(CheckInFormSchema),
   });
+  const submit = handleSubmit((values) => {
+    if (mutation.isPending) return;
+
+    mutation.mutate(values);
+  });
 
   if (!id) {
     return (
@@ -172,7 +177,7 @@ export default function AddCheckInScreen() {
           <SubmitButton
             label={mutation.isPending ? 'Saving...' : 'Add Check-in'}
             disabled={mutation.isPending}
-            onPress={handleSubmit((values) => mutation.mutate(values))}
+            onPress={submit}
           />
           <SecondaryButton label="Cancel" onPress={() => router.back()} />
         </ScrollView>
