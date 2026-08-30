@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { observer } from 'mobx-react-lite';
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet } from 'react-native';
 
 import { listRetainers } from '@/api/client';
 import { getQueryErrorMessage } from '@/api/errors';
@@ -13,20 +13,17 @@ import {
   type FilterDraft,
 } from '@/components/FilterSortModal';
 import { RetainerRow } from '@/components/RetainerRow';
+import { RetainerSearch } from '@/components/retainer-search';
 import { EmptyState, ErrorState, InlineErrorState, LoadingState } from '@/components/screen-state';
 import { ThemedText } from '@/components/themed-text';
-import { Button } from '@/components/ui/button';
-import { Chip } from '@/components/ui/chip';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { Separator } from '@/components/ui/separator';
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
 import { useRootStore } from '@/stores/rootStore';
 import type { RetainerSummary } from '@/types/api';
-import { filterAndSortRetainers, sortLabel } from '@/utils/retainerList';
+import { filterAndSortRetainers } from '@/utils/retainerList';
 
 const RetainerListScreen = observer(function RetainerListScreen() {
-  const theme = useTheme();
   const { retainerList } = useRootStore();
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [filterDraft, setFilterDraft] = useState<FilterDraft>(defaultFilterDraft);
@@ -99,83 +96,6 @@ const RetainerListScreen = observer(function RetainerListScreen() {
     setIsFilterModalOpen(false);
   }, [filterDraft, retainerList]);
 
-  const activeFilterChips = [
-    retainerList.searchText.trim()
-      ? {
-          key: 'search',
-          label: `Search: ${retainerList.searchText.trim()} x`,
-          onPress: () => retainerList.setSearchText(''),
-        }
-      : null,
-    retainerList.healthFilter !== 'all'
-      ? {
-          key: 'health',
-          label: `Health: ${retainerList.healthFilter} x`,
-          onPress: () => retainerList.setHealthFilter('all'),
-        }
-      : null,
-    !retainerList.showActive
-      ? {
-          key: 'showActive',
-          label: 'Active hidden x',
-          onPress: () => retainerList.setShowActive(true),
-        }
-      : null,
-    retainerList.showArchived
-      ? {
-          key: 'showArchived',
-          label: 'Archived shown x',
-          onPress: () => retainerList.setShowArchived(false),
-        }
-      : null,
-    retainerList.sortMode !== 'health'
-      ? {
-          key: 'sort',
-          label: `Sort: ${sortLabel(retainerList.sortMode)} x`,
-          onPress: () => retainerList.setSortMode('health'),
-        }
-      : null,
-  ].filter((chip) => chip !== null);
-
-  function renderSearchHeader() {
-    return (
-      <View style={styles.header}>
-        <TextInput
-          accessibilityLabel="Search retainers"
-          placeholder="Search clients or leads"
-          placeholderTextColor={theme.textSecondary}
-          value={retainerList.searchText}
-          onChangeText={retainerList.setSearchText}
-          style={[
-            styles.searchInput,
-            {
-              backgroundColor: theme.backgroundElement,
-              color: theme.text,
-            },
-          ]}
-        />
-        {activeFilterChips.length > 0 ? (
-          <View style={styles.activeFilterChips}>
-            {activeFilterChips.map((chip) => (
-              <Chip
-                key={chip.key}
-                label={chip.label}
-                selected={false}
-                onPress={chip.onPress}
-              />
-            ))}
-          </View>
-        ) : null}
-        <View style={styles.headerActions}>
-          <Button label="Filter & Sort" onPress={openFilterModal} />
-          {retainerList.hasActiveFilters ? (
-            <Button label="Clear" onPress={retainerList.resetFilters} variant="secondary" />
-          ) : null}
-        </View>
-      </View>
-    );
-  }
-
   // TanStack Query v5 can be fetching with cached data. isPending is the
   // initial no-data state; isFetching below is only non-blocking background work.
   if (isPending) {
@@ -220,7 +140,7 @@ const RetainerListScreen = observer(function RetainerListScreen() {
         }
         ListHeaderComponent={
           <>
-            {renderSearchHeader()}
+            <RetainerSearch retainerList={retainerList} onOpenFilterModal={openFilterModal} />
             {error && data.length > 0 ? (
               <InlineErrorState message={getQueryErrorMessage(error)} onRetry={() => void refetch()} />
             ) : isFetching && !isRefreshing ? (
@@ -249,26 +169,6 @@ const RetainerListScreen = observer(function RetainerListScreen() {
 export default RetainerListScreen;
 
 const styles = StyleSheet.create({
-  header: {
-    gap: Spacing.three,
-    marginVertical: Spacing.five,
-  },
-  searchInput: {
-    minHeight: 48,
-    borderRadius: 8,
-    paddingHorizontal: Spacing.three,
-    fontSize: 16,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  activeFilterChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
   backgroundStatus: {
     paddingBottom: Spacing.two,
     textAlign: 'center',

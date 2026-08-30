@@ -1,3 +1,9 @@
 packages:
   - api
   - mobile
+
+allowBuilds:
+  '@prisma/engines': true
+  better-sqlite3: true
+  prisma: true
+  esbuild: false
