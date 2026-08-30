@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { observer } from 'mobx-react-lite';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Modal,
   Pressable,
   StyleSheet,
   Switch,
@@ -24,12 +25,33 @@ import { useTheme } from '@/hooks/use-theme';
 import type { RetainerSummary } from '@/types/api';
 
 const healthFilters: HealthFilter[] = ['all', 'red', 'amber', 'green'];
-const sortModes: RetainerListSortMode[] = ['health', 'latestCheckIn', 'clientName'];
+const sortModes: RetainerListSortMode[] = [
+  'health',
+  'latestCheckInNewest',
+  'latestCheckInOldest',
+  'clientName',
+];
 const healthRank: Record<Exclude<HealthFilter, 'all'>, number> = { red: 0, amber: 1, green: 2 };
+
+type FilterDraft = {
+  healthFilter: HealthFilter;
+  showActive: boolean;
+  showArchived: boolean;
+  sortMode: RetainerListSortMode;
+};
+
+const defaultFilterDraft: FilterDraft = {
+  healthFilter: 'all',
+  showActive: true,
+  showArchived: false,
+  sortMode: 'health',
+};
 
 const RetainerListScreen = observer(function RetainerListScreen() {
   const theme = useTheme();
   const { retainerList } = useRootStore();
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [filterDraft, setFilterDraft] = useState<FilterDraft>(defaultFilterDraft);
   const { data = [], error, isLoading, isRefetching, refetch } = useQuery({
     queryKey: queryKeys.retainers.list(),
     queryFn: listRetainers,
@@ -39,9 +61,14 @@ const RetainerListScreen = observer(function RetainerListScreen() {
     const search = retainerList.searchText.trim().toLowerCase();
 
     // TanStack Query owns the API array. MobX owns only the view preferences;
-    // filtering derives a new view and never copies server records into MobX.
+    // local filtering is fine for this challenge's ~300 records and avoids
+    // adding API filter plumbing before the product needs it.
     return data
-      .filter((retainer) => retainerList.showArchived || retainer.status !== 'archived')
+      .filter(
+        (retainer) =>
+          (retainer.status === 'active' && retainerList.showActive) ||
+          (retainer.status === 'archived' && retainerList.showArchived),
+      )
       .filter(
         (retainer) =>
           retainerList.healthFilter === 'all' ||
@@ -58,6 +85,7 @@ const RetainerListScreen = observer(function RetainerListScreen() {
     data,
     retainerList.healthFilter,
     retainerList.searchText,
+    retainerList.showActive,
     retainerList.showArchived,
     retainerList.sortMode,
   ]);
@@ -79,6 +107,29 @@ const RetainerListScreen = observer(function RetainerListScreen() {
     // Pull-to-refresh refetches the same query so cache state and observers stay in sync.
     void refetch();
   }, [refetch]);
+
+  const openFilterModal = useCallback(() => {
+    setFilterDraft({
+      healthFilter: retainerList.healthFilter,
+      showActive: retainerList.showActive,
+      showArchived: retainerList.showArchived,
+      sortMode: retainerList.sortMode,
+    });
+    setIsFilterModalOpen(true);
+  }, [
+    retainerList.healthFilter,
+    retainerList.showActive,
+    retainerList.showArchived,
+    retainerList.sortMode,
+  ]);
+
+  const applyFilterDraft = useCallback(() => {
+    retainerList.setHealthFilter(filterDraft.healthFilter);
+    retainerList.setShowActive(filterDraft.showActive);
+    retainerList.setShowArchived(filterDraft.showArchived);
+    retainerList.setSortMode(filterDraft.sortMode);
+    setIsFilterModalOpen(false);
+  }, [filterDraft, retainerList]);
 
   if (isLoading) {
     return (
@@ -125,30 +176,12 @@ const RetainerListScreen = observer(function RetainerListScreen() {
             },
           ]}
         />
-        <ControlGroup label="Health" values={healthFilters}>
-          {(value) => (
-            <Chip
-              key={value}
-              label={value}
-              selected={retainerList.healthFilter === value}
-              onPress={() => retainerList.setHealthFilter(value)}
-            />
-          )}
-        </ControlGroup>
-        <View style={styles.switchRow}>
-          <ThemedText>Show archived</ThemedText>
-          <Switch value={retainerList.showArchived} onValueChange={retainerList.setShowArchived} />
+        <View style={styles.headerActions}>
+          <Button label="Filter & Sort" onPress={openFilterModal} />
+          {retainerList.hasActiveFilters ? (
+            <Button label="Clear" onPress={retainerList.resetFilters} variant="secondary" />
+          ) : null}
         </View>
-        <ControlGroup label="Sort" values={sortModes}>
-          {(value) => (
-            <Chip
-              key={value}
-              label={sortLabel(value)}
-              selected={retainerList.sortMode === value}
-              onPress={() => retainerList.setSortMode(value)}
-            />
-          )}
-        </ControlGroup>
       </View>
 
       <FlatList
@@ -173,6 +206,13 @@ const RetainerListScreen = observer(function RetainerListScreen() {
         initialNumToRender={12}
         maxToRenderPerBatch={12}
         windowSize={7}
+      />
+      <FilterSortModal
+        visible={isFilterModalOpen}
+        draft={filterDraft}
+        onChangeDraft={setFilterDraft}
+        onApply={applyFilterDraft}
+        onCancel={() => setIsFilterModalOpen(false)}
       />
     </ScreenShell>
   );
@@ -248,15 +288,27 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
   );
 }
 
-function Button({ label, onPress }: { label: string; onPress: () => void }) {
+function Button({
+  label,
+  onPress,
+  variant = 'primary',
+}: {
+  label: string;
+  onPress: () => void;
+  variant?: 'primary' | 'secondary';
+}) {
   const theme = useTheme();
+  const isPrimary = variant === 'primary';
 
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
-      style={[styles.button, { backgroundColor: theme.text }]}>
-      <ThemedText type="smallBold" style={{ color: theme.background }}>
+      style={[
+        styles.button,
+        { backgroundColor: isPrimary ? theme.text : theme.backgroundElement },
+      ]}>
+      <ThemedText type="smallBold" style={{ color: isPrimary ? theme.background : theme.text }}>
         {label}
       </ThemedText>
     </Pressable>
@@ -306,6 +358,99 @@ function Separator() {
   return <View style={styles.separator} />;
 }
 
+function FilterSortModal({
+  visible,
+  draft,
+  onChangeDraft,
+  onApply,
+  onCancel,
+}: {
+  visible: boolean;
+  draft: FilterDraft;
+  onChangeDraft: (draft: FilterDraft) => void;
+  onApply: () => void;
+  onCancel: () => void;
+}) {
+  const theme = useTheme();
+  const updateDraft = useCallback(
+    (patch: Partial<FilterDraft>) => onChangeDraft({ ...draft, ...patch }),
+    [draft, onChangeDraft],
+  );
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
+      <View style={styles.modalRoot}>
+        <Pressable
+          accessibilityLabel="Close filter and sort"
+          style={styles.modalBackdrop}
+          onPress={onCancel}
+        />
+        <View style={[styles.modalSheet, { backgroundColor: theme.background }]}>
+          <View style={styles.modalHandle} />
+          <ThemedText type="subtitle">Filter & Sort</ThemedText>
+          {/* Draft state lets Cancel discard modal edits; Apply is the only path
+              that commits these local UI preferences into MobX. */}
+          <ControlGroup label="Filter" values={healthFilters}>
+            {(value) => (
+              <Chip
+                key={value}
+                label={value}
+                selected={draft.healthFilter === value}
+                onPress={() => updateDraft({ healthFilter: value })}
+              />
+            )}
+          </ControlGroup>
+          <View style={styles.controlGroup}>
+            <ThemedText type="smallBold">Visibility</ThemedText>
+            <SwitchRow
+              label="Show Active"
+              value={draft.showActive}
+              onValueChange={(showActive) => updateDraft({ showActive })}
+            />
+            <SwitchRow
+              label="Show Archived"
+              value={draft.showArchived}
+              onValueChange={(showArchived) => updateDraft({ showArchived })}
+            />
+          </View>
+          <ControlGroup label="Sort" values={sortModes}>
+            {(value) => (
+              <Chip
+                key={value}
+                label={sortLabel(value)}
+                selected={draft.sortMode === value}
+                onPress={() => updateDraft({ sortMode: value })}
+              />
+            )}
+          </ControlGroup>
+          <View style={styles.modalActions}>
+            <Button label="Reset" onPress={() => onChangeDraft(defaultFilterDraft)} variant="secondary" />
+            <Button label="Cancel" onPress={onCancel} variant="secondary" />
+            <Button label="Apply" onPress={onApply} />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function SwitchRow({
+  label,
+  value,
+  onValueChange,
+}: {
+  label: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+}) {
+  return (
+    <View style={styles.switchRow}>
+      <ThemedText>{label}</ThemedText>
+      <Switch accessibilityLabel={label} value={value} onValueChange={onValueChange} />
+    </View>
+  );
+}
+
 function compareRetainers(
   a: RetainerSummary,
   b: RetainerSummary,
@@ -315,10 +460,17 @@ function compareRetainers(
     return healthRank[a.health.status] - healthRank[b.health.status] || compareClientName(a, b);
   }
 
-  if (sortMode === 'latestCheckIn') {
+  if (sortMode === 'latestCheckInNewest') {
+    return (
+      latestCheckInMs(b.latestCheckInDate, Number.NEGATIVE_INFINITY) -
+        latestCheckInMs(a.latestCheckInDate, Number.NEGATIVE_INFINITY) || compareClientName(a, b)
+    );
+  }
+
+  if (sortMode === 'latestCheckInOldest') {
     // Null dates sort first with oldest check-ins so neglected retainers stay visible.
     return (
-      latestCheckInMs(a.latestCheckInDate) - latestCheckInMs(b.latestCheckInDate) ||
+      latestCheckInMs(a.latestCheckInDate, 0) - latestCheckInMs(b.latestCheckInDate, 0) ||
       compareClientName(a, b)
     );
   }
@@ -326,8 +478,8 @@ function compareRetainers(
   return compareClientName(a, b);
 }
 
-function latestCheckInMs(date: string | null) {
-  return date ? new Date(date).getTime() : 0;
+function latestCheckInMs(date: string | null, fallback: number) {
+  return date ? new Date(date).getTime() : fallback;
 }
 
 function compareClientName(a: RetainerSummary, b: RetainerSummary) {
@@ -339,9 +491,10 @@ function formatDate(date: string | null) {
 }
 
 function sortLabel(sortMode: RetainerListSortMode) {
-  if (sortMode === 'latestCheckIn') return 'latest check-in';
-  if (sortMode === 'clientName') return 'client name';
-  return sortMode;
+  if (sortMode === 'latestCheckInNewest') return 'Latest check-in newest';
+  if (sortMode === 'latestCheckInOldest') return 'Latest check-in oldest';
+  if (sortMode === 'clientName') return 'Client name A-Z';
+  return 'Health severity';
 }
 
 const styles = StyleSheet.create({
@@ -364,6 +517,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: Spacing.three,
     fontSize: 16,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
   },
   controlGroup: {
     gap: Spacing.two,
@@ -448,5 +606,37 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     justifyContent: 'center',
     padding: Spacing.four,
+  },
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalBackdrop: {
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  modalSheet: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    gap: Spacing.three,
+    maxHeight: '88%',
+    padding: Spacing.three,
+  },
+  modalHandle: {
+    alignSelf: 'center',
+    backgroundColor: '#999999',
+    borderRadius: 2,
+    height: 4,
+    width: 40,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+    justifyContent: 'flex-end',
   },
 });
