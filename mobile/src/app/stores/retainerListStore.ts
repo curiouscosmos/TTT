@@ -25,7 +25,8 @@ export class RetainerListStore {
       this.searchText.trim().length > 0 ||
       this.healthFilter !== 'all' ||
       !this.showActive ||
-      this.showArchived
+      this.showArchived ||
+      this.sortMode !== 'health'
     );
   }
 

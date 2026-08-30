@@ -3,8 +3,8 @@ import { createContext, PropsWithChildren, useContext, useMemo } from 'react';
 import { RetainerListStore } from '@/app/stores/retainerListStore';
 
 class RootStore {
-  // MobX is reserved for local UI state. Retainers, check-ins, and API loading
-  // state stay in TanStack Query so there is one server-state owner.
+  // State ownership: MobX keeps client-only UI preferences; TanStack Query owns
+  // API data/loading/errors; React Hook Form owns form state; Expo Router owns routes.
   retainerList = new RetainerListStore();
 }
 
