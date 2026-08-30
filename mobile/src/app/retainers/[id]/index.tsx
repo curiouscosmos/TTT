@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 
 import { getRetainer } from '@/api/client';
 import { getQueryErrorMessage } from '@/api/errors';
@@ -10,10 +9,12 @@ import { queryKeys } from '@/api/queryKeys';
 import { EmptyState, ErrorState, InlineErrorState, LoadingState } from '@/components/screen-state';
 import { StatusBadge } from '@/components/status-badge';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Button } from '@/components/ui/button';
+import { ScreenShell } from '@/components/ui/screen-shell';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { CheckIn, HealthStatus, RetainerDetail } from '@/types/api';
+import { formatDate } from '@/utils/date';
 
 export default function RetainerDetailScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
@@ -89,74 +90,64 @@ function RetainerDetailContent({
   onRetry: () => void;
 }) {
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}>
-          {refetchError ? (
-            <InlineErrorState
-              message={getQueryErrorMessage(refetchError, {
-                notFoundMessage: 'The requested retainer could not be found.',
-              })}
-              onRetry={onRetry}
+    <ScreenShell padded={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}>
+        {refetchError ? (
+          <InlineErrorState
+            message={getQueryErrorMessage(refetchError, {
+              notFoundMessage: 'The requested retainer could not be found.',
+            })}
+            onRetry={onRetry}
+          />
+        ) : isFetching && !isRefreshing ? (
+          <ThemedText type="small" themeColor="textSecondary" style={styles.backgroundStatus}>
+            Refreshing...
+          </ThemedText>
+        ) : null}
+        <View style={styles.header}>
+          <ThemedText type="subtitle">{retainer.clientName}</ThemedText>
+          <View style={styles.actionRow}>
+            <Button
+              label="Edit Retainer"
+              onPress={() =>
+                router.push({ pathname: '/retainers/[id]/edit', params: { id: retainer.id } })
+              }
             />
-          ) : isFetching && !isRefreshing ? (
-            <ThemedText type="small" themeColor="textSecondary" style={styles.backgroundStatus}>
-              Refreshing...
+            <Button
+              label="Add Check-in"
+              onPress={() =>
+                router.push({
+                  pathname: '/retainers/[id]/check-in',
+                  params: { id: retainer.id },
+                })
+              }
+              variant="secondary"
+            />
+          </View>
+        </View>
+
+        <HealthPanel status={retainer.health.status} reason={retainer.health.reason} />
+
+        <View style={styles.section}>
+          <InfoRow label="Lead engineer" value={retainer.leadEngineer} />
+          <InfoRow label="Start date" value={formatDate(retainer.startDate)} />
+          <InfoRow label="Status" value={retainer.status} />
+        </View>
+
+        <View style={styles.section}>
+          <ThemedText type="smallBold">Recent check-ins</ThemedText>
+          {retainer.checkIns.length === 0 ? (
+            <ThemedText type="small" themeColor="textSecondary">
+              No check-ins yet.
             </ThemedText>
-          ) : null}
-          <View style={styles.header}>
-            <ThemedText type="subtitle">{retainer.clientName}</ThemedText>
-            <View style={styles.actionRow}>
-              <Button
-                label="Edit Retainer"
-                onPress={() =>
-                  router.push({ pathname: '/retainers/[id]/edit', params: { id: retainer.id } })
-                }
-              />
-              <Button
-                label="Add Check-in"
-                onPress={() =>
-                  router.push({
-                    pathname: '/retainers/[id]/check-in',
-                    params: { id: retainer.id },
-                  })
-                }
-                variant="secondary"
-              />
-            </View>
-          </View>
-
-          <HealthPanel status={retainer.health.status} reason={retainer.health.reason} />
-
-          <View style={styles.section}>
-            <InfoRow label="Lead engineer" value={retainer.leadEngineer} />
-            <InfoRow label="Start date" value={formatDate(retainer.startDate)} />
-            <InfoRow label="Status" value={retainer.status} />
-          </View>
-
-          <View style={styles.section}>
-            <ThemedText type="smallBold">Recent check-ins</ThemedText>
-            {retainer.checkIns.length === 0 ? (
-              <ThemedText type="small" themeColor="textSecondary">
-                No check-ins yet.
-              </ThemedText>
-            ) : (
-              retainer.checkIns.map((checkIn) => <CheckInCard key={checkIn.id} checkIn={checkIn} />)
-            )}
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
-
-function ScreenShell({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>{children}</SafeAreaView>
-    </ThemedView>
+          ) : (
+            retainer.checkIns.map((checkIn) => <CheckInCard key={checkIn.id} checkIn={checkIn} />)
+          )}
+        </View>
+      </ScrollView>
+    </ScreenShell>
   );
 }
 
@@ -204,46 +195,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Button({
-  label,
-  onPress,
-  variant = 'primary',
-}: {
-  label: string;
-  onPress: () => void;
-  variant?: 'primary' | 'secondary';
-}) {
-  const theme = useTheme();
-  const isPrimary = variant === 'primary';
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={[styles.button, { backgroundColor: isPrimary ? theme.text : theme.backgroundElement }]}>
-      <ThemedText type="smallBold" style={{ color: isPrimary ? theme.background : theme.text }}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
-function formatDate(date: string) {
-  // API dates are ISO strings; display uses the device locale and intentionally
-  // avoids timezone math until product requirements need exact date semantics.
-  return new Date(date).toLocaleDateString();
-}
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-  },
   scrollContent: {
     gap: Spacing.three,
     padding: Spacing.three,
@@ -281,11 +233,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.two,
     justifyContent: 'space-between',
-  },
-  button: {
-    minHeight: 44,
-    borderRadius: 8,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.three,
   },
 });

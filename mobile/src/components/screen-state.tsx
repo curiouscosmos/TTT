@@ -1,8 +1,8 @@
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { Button } from '@/components/ui/button';
 import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
 
 export function LoadingState({ message }: { message: string }) {
   return (
@@ -49,7 +49,7 @@ export function InlineErrorState({
       <ThemedText type="small" themeColor="textSecondary" style={styles.inlineErrorText}>
         {message}
       </ThemedText>
-      <ActionButton label="Retry" onPress={onRetry} />
+      <Button label="Retry" onPress={onRetry} />
     </View>
   );
 }
@@ -75,28 +75,13 @@ export function EmptyState({
           {message}
         </ThemedText>
       ) : null}
-      {actionLabel && onAction ? <ActionButton label={actionLabel} onPress={onAction} /> : null}
+      {actionLabel && onAction ? <Button label={actionLabel} onPress={onAction} /> : null}
     </View>
   );
 }
 
 function RetryButton({ onPress }: { onPress: () => void }) {
-  return <ActionButton label="Retry" onPress={onPress} />;
-}
-
-function ActionButton({ label, onPress }: { label: string; onPress: () => void }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={[styles.button, { backgroundColor: theme.text }]}>
-      <ThemedText type="smallBold" style={{ color: theme.background }}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
+  return <Button label="Retry" onPress={onPress} />;
 }
 
 const styles = StyleSheet.create({
@@ -109,12 +94,6 @@ const styles = StyleSheet.create({
   },
   centerText: {
     textAlign: 'center',
-  },
-  button: {
-    borderRadius: 8,
-    justifyContent: 'center',
-    minHeight: 44,
-    paddingHorizontal: Spacing.three,
   },
   inlineError: {
     alignItems: 'center',

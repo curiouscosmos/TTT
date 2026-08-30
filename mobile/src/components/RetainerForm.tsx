@@ -6,7 +6,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RetainerFormSchema, type RetainerFormValues } from '@/schemas/retainerForm';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { Button } from '@/components/ui/button';
+import { FormField, FormInput, formStyles } from '@/components/ui/form';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -71,7 +72,7 @@ export function RetainerForm({
               control={control}
               name="clientName"
               render={({ field: { onBlur, onChange, value } }) => (
-                <Field
+                <FormField
                   label="Client name"
                   error={errors.clientName?.message}
                   input={
@@ -91,7 +92,7 @@ export function RetainerForm({
               control={control}
               name="leadEngineer"
               render={({ field: { onBlur, onChange, value } }) => (
-                <Field
+                <FormField
                   label="Lead engineer"
                   error={errors.leadEngineer?.message}
                   input={
@@ -111,7 +112,7 @@ export function RetainerForm({
               control={control}
               name="startDate"
               render={({ field: { onBlur, onChange, value } }) => (
-                <Field
+                <FormField
                   label="Start date"
                   error={errors.startDate?.message}
                   input={
@@ -132,7 +133,7 @@ export function RetainerForm({
               control={control}
               name="status"
               render={({ field: { onChange, value } }) => (
-                <Field
+                <FormField
                   label="Status"
                   error={errors.status?.message}
                   input={
@@ -158,48 +159,22 @@ export function RetainerForm({
             {serverError ? (
               // The current API returns message-level errors, not field-level paths,
               // so server failures are shown at the form level.
-              <ThemedText type="small" style={styles.errorText}>
+              <ThemedText type="small" style={formStyles.errorText}>
                 {serverError}
               </ThemedText>
             ) : null}
-            <SubmitButton
+            <Button
               label={isSubmitting ? 'Saving...' : submitLabel}
               disabled={isSubmitting}
               onPress={submit}
             />
             {onCancel ? (
-              <SecondaryButton label={cancelLabel} onPress={() => onCancel(isDirty)} />
+              <Button label={cancelLabel} onPress={() => onCancel(isDirty)} variant="secondary" />
             ) : null}
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ThemedView>
-  );
-}
-
-function Field({ label, input, error }: { label: string; input: React.ReactNode; error?: string }) {
-  return (
-    <View style={styles.field}>
-      <ThemedText type="smallBold">{label}</ThemedText>
-      {input}
-      {error ? (
-        <ThemedText type="small" style={styles.errorText}>
-          {error}
-        </ThemedText>
-      ) : null}
-    </View>
-  );
-}
-
-function FormInput(props: React.ComponentProps<typeof TextInput>) {
-  const theme = useTheme();
-
-  return (
-    <TextInput
-      placeholderTextColor={theme.textSecondary}
-      style={[styles.input, { backgroundColor: theme.backgroundElement, color: theme.text }]}
-      {...props}
-    />
   );
 }
 
@@ -231,44 +206,6 @@ function StatusOption({
   );
 }
 
-function SubmitButton({
-  label,
-  disabled,
-  onPress,
-}: {
-  label: string;
-  disabled: boolean;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={[styles.submitButton, { backgroundColor: theme.text }, disabled && styles.disabled]}>
-      <ThemedText type="smallBold" style={{ color: theme.background }}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
-function SecondaryButton({ label, onPress }: { label: string; onPress: () => void }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={[styles.submitButton, { backgroundColor: theme.backgroundElement }]}>
-      <ThemedText type="smallBold">{label}</ThemedText>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -287,15 +224,6 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     paddingBottom: Spacing.five,
   },
-  field: {
-    gap: Spacing.one,
-  },
-  input: {
-    borderRadius: 8,
-    fontSize: 16,
-    minHeight: 48,
-    paddingHorizontal: Spacing.three,
-  },
   statusRow: {
     flexDirection: 'row',
     gap: Spacing.two,
@@ -305,18 +233,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 44,
     paddingHorizontal: Spacing.three,
-  },
-  submitButton: {
-    alignItems: 'center',
-    borderRadius: 8,
-    justifyContent: 'center',
-    minHeight: 48,
-    paddingHorizontal: Spacing.four,
-  },
-  disabled: {
-    opacity: 0.6,
-  },
-  errorText: {
-    color: '#c12a2a',
   },
 });

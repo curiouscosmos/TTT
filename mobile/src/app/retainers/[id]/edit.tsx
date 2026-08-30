@@ -1,15 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert } from 'react-native';
 
 import { getRetainer, updateRetainer } from '@/api/client';
 import { getMutationErrorMessage, getQueryErrorMessage } from '@/api/errors';
 import { queryKeys } from '@/api/queryKeys';
 import { RetainerForm } from '@/components/RetainerForm';
 import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth } from '@/constants/theme';
+import { ScreenShell } from '@/components/ui/screen-shell';
 import type { RetainerFormValues } from '@/schemas/retainerForm';
 
 export default function EditRetainerScreen() {
@@ -100,26 +98,6 @@ export default function EditRetainerScreen() {
   );
 }
 
-function ScreenShell({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>{children}</SafeAreaView>
-    </ThemedView>
-  );
-}
-
 function toDateInputValue(date: string) {
   return date.slice(0, 10);
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-  },
-});

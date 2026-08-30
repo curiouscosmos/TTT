@@ -12,7 +12,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listRetainers } from '@/api/client';
 import { getQueryErrorMessage } from '@/api/errors';
@@ -20,12 +19,17 @@ import { queryKeys } from '@/api/queryKeys';
 import { EmptyState, ErrorState, InlineErrorState, LoadingState } from '@/components/screen-state';
 import { StatusBadge } from '@/components/status-badge';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Button } from '@/components/ui/button';
+import { Chip } from '@/components/ui/chip';
+import { ScreenShell } from '@/components/ui/screen-shell';
+import { Separator } from '@/components/ui/separator';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { HealthFilter, RetainerListSortMode } from '@/stores/retainerListStore';
 import { useRootStore } from '@/stores/rootStore';
 import type { RetainerSummary } from '@/types/api';
+import { formatDate } from '@/utils/date';
+import { filterAndSortRetainers, sortLabel } from '@/utils/retainerList';
 
 const healthFilters: HealthFilter[] = ['all', 'red', 'amber', 'green'];
 const sortModes: RetainerListSortMode[] = [
@@ -34,8 +38,6 @@ const sortModes: RetainerListSortMode[] = [
   'latestCheckInOldest',
   'clientName',
 ];
-const healthRank: Record<Exclude<HealthFilter, 'all'>, number> = { red: 0, amber: 1, green: 2 };
-
 type FilterDraft = {
   healthFilter: HealthFilter;
   showActive: boolean;
@@ -62,30 +64,16 @@ const RetainerListScreen = observer(function RetainerListScreen() {
   });
 
   const visibleRetainers = useMemo(() => {
-    const search = retainerList.searchText.trim().toLowerCase();
-
     // TanStack Query owns the API array. MobX owns only the view preferences;
     // local filtering is fine for this challenge's ~300 records and avoids
     // adding API filter plumbing before the product needs it.
-    return data
-      .filter(
-        (retainer) =>
-          (retainer.status === 'active' && retainerList.showActive) ||
-          (retainer.status === 'archived' && retainerList.showArchived),
-      )
-      .filter(
-        (retainer) =>
-          retainerList.healthFilter === 'all' ||
-          retainer.health.status === retainerList.healthFilter,
-      )
-      .filter(
-        (retainer) =>
-          !search ||
-          retainer.clientName.toLowerCase().includes(search) ||
-          retainer.leadEngineer.toLowerCase().includes(search),
-      )
-      .slice()
-      .sort((a, b) => compareRetainers(a, b, retainerList.sortMode));
+    return filterAndSortRetainers(data, {
+      searchText: retainerList.searchText,
+      healthFilter: retainerList.healthFilter,
+      showActive: retainerList.showActive,
+      showArchived: retainerList.showArchived,
+      sortMode: retainerList.sortMode,
+    });
   }, [
     data,
     retainerList.healthFilter,
@@ -142,7 +130,7 @@ const RetainerListScreen = observer(function RetainerListScreen() {
   // initial no-data state; isFetching below is only non-blocking background work.
   if (isPending) {
     return (
-      <ScreenShell>
+      <ScreenShell padded>
         <LoadingState message="Loading retainers..." />
       </ScreenShell>
     );
@@ -150,7 +138,7 @@ const RetainerListScreen = observer(function RetainerListScreen() {
 
   if (error && data.length === 0) {
     return (
-      <ScreenShell>
+      <ScreenShell padded>
         <ErrorState
           title="Could not load retainers"
           message={getQueryErrorMessage(error)}
@@ -161,7 +149,7 @@ const RetainerListScreen = observer(function RetainerListScreen() {
   }
 
   return (
-    <ScreenShell>
+    <ScreenShell padded>
       <View style={styles.header}>
         <ThemedText type="subtitle">Retainers</ThemedText>
         <TextInput
@@ -231,14 +219,6 @@ const RetainerListScreen = observer(function RetainerListScreen() {
 
 export default RetainerListScreen;
 
-function ScreenShell({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>{children}</SafeAreaView>
-    </ThemedView>
-  );
-}
-
 function RetainerRow({ retainer, onPress }: { retainer: RetainerSummary; onPress: () => void }) {
   const theme = useTheme();
 
@@ -268,54 +248,6 @@ function RetainerRow({ retainer, onPress }: { retainer: RetainerSummary; onPress
   );
 }
 
-function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      onPress={onPress}
-      style={[
-        styles.chip,
-        {
-          backgroundColor: selected ? theme.text : theme.backgroundElement,
-        },
-      ]}>
-      <ThemedText type="small" style={{ color: selected ? theme.background : theme.text }}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
-function Button({
-  label,
-  onPress,
-  variant = 'primary',
-}: {
-  label: string;
-  onPress: () => void;
-  variant?: 'primary' | 'secondary';
-}) {
-  const theme = useTheme();
-  const isPrimary = variant === 'primary';
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={[
-        styles.button,
-        { backgroundColor: isPrimary ? theme.text : theme.backgroundElement },
-      ]}>
-      <ThemedText type="smallBold" style={{ color: isPrimary ? theme.background : theme.text }}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
 function ControlGroup<T extends string>({
   label,
   values,
@@ -331,10 +263,6 @@ function ControlGroup<T extends string>({
       <View style={styles.chipRow}>{values.map(children)}</View>
     </View>
   );
-}
-
-function Separator() {
-  return <View style={styles.separator} />;
 }
 
 function FilterSortModal({
@@ -431,63 +359,7 @@ function SwitchRow({
   );
 }
 
-function compareRetainers(
-  a: RetainerSummary,
-  b: RetainerSummary,
-  sortMode: RetainerListSortMode,
-) {
-  if (sortMode === 'health') {
-    return healthRank[a.health.status] - healthRank[b.health.status] || compareClientName(a, b);
-  }
-
-  if (sortMode === 'latestCheckInNewest') {
-    return (
-      latestCheckInMs(b.latestCheckInDate, Number.NEGATIVE_INFINITY) -
-        latestCheckInMs(a.latestCheckInDate, Number.NEGATIVE_INFINITY) || compareClientName(a, b)
-    );
-  }
-
-  if (sortMode === 'latestCheckInOldest') {
-    // Null dates sort first with oldest check-ins so neglected retainers stay visible.
-    return (
-      latestCheckInMs(a.latestCheckInDate, 0) - latestCheckInMs(b.latestCheckInDate, 0) ||
-      compareClientName(a, b)
-    );
-  }
-
-  return compareClientName(a, b);
-}
-
-function latestCheckInMs(date: string | null, fallback: number) {
-  return date ? new Date(date).getTime() : fallback;
-}
-
-function compareClientName(a: RetainerSummary, b: RetainerSummary) {
-  return a.clientName.localeCompare(b.clientName);
-}
-
-function formatDate(date: string | null) {
-  return date ? new Date(date).toLocaleDateString() : 'None';
-}
-
-function sortLabel(sortMode: RetainerListSortMode) {
-  if (sortMode === 'latestCheckInNewest') return 'Latest check-in newest';
-  if (sortMode === 'latestCheckInOldest') return 'Latest check-in oldest';
-  if (sortMode === 'clientName') return 'Client name A-Z';
-  return 'Health severity';
-}
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.three,
-  },
   header: {
     gap: Spacing.three,
     paddingVertical: Spacing.three,
@@ -515,12 +387,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: Spacing.two,
   },
-  chip: {
-    minHeight: 44,
-    borderRadius: 8,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.three,
-  },
   switchRow: {
     minHeight: 44,
     alignItems: 'center',
@@ -544,15 +410,6 @@ const styles = StyleSheet.create({
   },
   clientName: {
     flex: 1,
-  },
-  separator: {
-    height: Spacing.two,
-  },
-  button: {
-    minHeight: 44,
-    borderRadius: 8,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.four,
   },
   pressed: {
     opacity: 0.75,

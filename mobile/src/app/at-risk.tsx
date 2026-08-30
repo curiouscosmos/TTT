@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listAtRiskRetainers } from '@/api/client';
 import { getQueryErrorMessage } from '@/api/errors';
@@ -10,10 +9,12 @@ import { queryKeys } from '@/api/queryKeys';
 import { EmptyState, ErrorState, InlineErrorState, LoadingState } from '@/components/screen-state';
 import { StatusBadge } from '@/components/status-badge';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { ScreenShell } from '@/components/ui/screen-shell';
+import { Separator } from '@/components/ui/separator';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { AtRiskRetainer } from '@/types/api';
+import { formatDate } from '@/utils/date';
 
 export default function AtRiskScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -95,14 +96,6 @@ export default function AtRiskScreen() {
   );
 }
 
-function ScreenShell({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>{children}</SafeAreaView>
-    </ThemedView>
-  );
-}
-
 function AtRiskRow({ retainer, onPress }: { retainer: AtRiskRetainer; onPress: () => void }) {
   const theme = useTheme();
 
@@ -135,25 +128,7 @@ function AtRiskRow({ retainer, onPress }: { retainer: AtRiskRetainer; onPress: (
   );
 }
 
-function Separator() {
-  return <View style={styles.separator} />;
-}
-
-function formatDate(date: string | null) {
-  return date ? new Date(date).toLocaleDateString() : 'None';
-}
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.three,
-  },
   header: {
     gap: Spacing.one,
     paddingVertical: Spacing.three,
@@ -179,9 +154,6 @@ const styles = StyleSheet.create({
   },
   clientName: {
     flex: 1,
-  },
-  separator: {
-    height: Spacing.two,
   },
   pressed: {
     opacity: 0.75,

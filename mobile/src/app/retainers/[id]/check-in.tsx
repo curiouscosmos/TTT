@@ -8,21 +8,22 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createCheckIn } from '@/api/client';
 import { getMutationErrorMessage } from '@/api/errors';
 import { queryKeys } from '@/api/queryKeys';
 import { EmptyState } from '@/components/screen-state';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Button } from '@/components/ui/button';
+import { FormField, FormInput, formStyles } from '@/components/ui/form';
+import { ScreenShell } from '@/components/ui/screen-shell';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { CheckInFormSchema, type CheckInFormValues } from '@/schemas/checkInForm';
 import type { HealthStatus } from '@/types/api';
+import { todayDateInputValue } from '@/utils/date';
 
 const ragStatuses: HealthStatus[] = ['green', 'amber', 'red'];
 
@@ -75,7 +76,7 @@ export default function AddCheckInScreen() {
   }
 
   return (
-    <ScreenShell>
+    <ScreenShell padded={false}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardAvoider}>
@@ -85,7 +86,7 @@ export default function AddCheckInScreen() {
             control={control}
             name="date"
             render={({ field: { onBlur, onChange, value } }) => (
-              <Field
+              <FormField
                 label="Date"
                 error={errors.date?.message}
                 input={
@@ -106,7 +107,7 @@ export default function AddCheckInScreen() {
             control={control}
             name="summary"
             render={({ field: { onBlur, onChange, value } }) => (
-              <Field
+              <FormField
                 label="Summary"
                 error={errors.summary?.message}
                 input={
@@ -117,7 +118,7 @@ export default function AddCheckInScreen() {
                     value={value}
                     onBlur={onBlur}
                     onChangeText={onChange}
-                    style={styles.multilineInput}
+                    style={formStyles.multilineInput}
                   />
                 }
               />
@@ -127,7 +128,7 @@ export default function AddCheckInScreen() {
             control={control}
             name="ragStatus"
             render={({ field: { onChange, value } }) => (
-              <Field
+              <FormField
                 label="RAG status"
                 error={errors.ragStatus?.message}
                 input={
@@ -151,7 +152,7 @@ export default function AddCheckInScreen() {
             control={control}
             name="riskNote"
             render={({ field: { onBlur, onChange, value } }) => (
-              <Field
+              <FormField
                 label="Risk note"
                 error={errors.riskNote?.message}
                 input={
@@ -163,60 +164,26 @@ export default function AddCheckInScreen() {
                     value={value ?? ''}
                     onBlur={onBlur}
                     onChangeText={onChange}
-                    style={styles.multilineInput}
+                    style={formStyles.multilineInput}
                   />
                 }
               />
             )}
           />
           {mutation.error ? (
-            <ThemedText type="small" style={styles.errorText}>
+            <ThemedText type="small" style={formStyles.errorText}>
               {getMutationErrorMessage(mutation.error)}
             </ThemedText>
           ) : null}
-          <SubmitButton
+          <Button
             label={mutation.isPending ? 'Saving...' : 'Add Check-in'}
             disabled={mutation.isPending}
             onPress={submit}
           />
-          <SecondaryButton label="Cancel" onPress={() => router.back()} />
+          <Button label="Cancel" onPress={() => router.back()} variant="secondary" />
         </ScrollView>
       </KeyboardAvoidingView>
     </ScreenShell>
-  );
-}
-
-function ScreenShell({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>{children}</SafeAreaView>
-    </ThemedView>
-  );
-}
-
-function Field({ label, input, error }: { label: string; input: React.ReactNode; error?: string }) {
-  return (
-    <View style={styles.field}>
-      <ThemedText type="smallBold">{label}</ThemedText>
-      {input}
-      {error ? (
-        <ThemedText type="small" style={styles.errorText}>
-          {error}
-        </ThemedText>
-      ) : null}
-    </View>
-  );
-}
-
-function FormInput(props: React.ComponentProps<typeof TextInput>) {
-  const theme = useTheme();
-
-  return (
-    <TextInput
-      placeholderTextColor={theme.textSecondary}
-      style={[styles.input, { backgroundColor: theme.backgroundElement, color: theme.text }, props.style]}
-      {...props}
-    />
   );
 }
 
@@ -249,65 +216,7 @@ function RagOption({
   );
 }
 
-function SubmitButton({
-  label,
-  disabled,
-  onPress,
-}: {
-  label: string;
-  disabled: boolean;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={[styles.button, { backgroundColor: theme.text }, disabled && styles.disabled]}>
-      <ThemedText type="smallBold" style={{ color: theme.background }}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
-function SecondaryButton({ label, onPress }: { label: string; onPress: () => void }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={[styles.button, { backgroundColor: theme.backgroundElement }]}>
-      <ThemedText type="smallBold">{label}</ThemedText>
-    </Pressable>
-  );
-}
-
-function todayDateInputValue() {
-  // The API accepts date-only strings; use local date components so the default
-  // does not jump a day for users outside UTC.
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = `${today.getMonth() + 1}`.padStart(2, '0');
-  const day = `${today.getDate()}`.padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
-}
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-  },
   keyboardAvoider: {
     flex: 1,
   },
@@ -315,20 +224,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     padding: Spacing.three,
     paddingBottom: Spacing.five,
-  },
-  field: {
-    gap: Spacing.one,
-  },
-  input: {
-    borderRadius: 8,
-    fontSize: 16,
-    minHeight: 48,
-    paddingHorizontal: Spacing.three,
-  },
-  multilineInput: {
-    minHeight: 96,
-    paddingTop: Spacing.three,
-    textAlignVertical: 'top',
   },
   ragRow: {
     flexDirection: 'row',
@@ -354,18 +249,5 @@ const styles = StyleSheet.create({
   },
   ragText: {
     color: '#ffffff',
-  },
-  button: {
-    alignItems: 'center',
-    borderRadius: 8,
-    justifyContent: 'center',
-    minHeight: 48,
-    paddingHorizontal: Spacing.four,
-  },
-  disabled: {
-    opacity: 0.6,
-  },
-  errorText: {
-    color: '#c12a2a',
   },
 });
