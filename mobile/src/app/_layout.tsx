@@ -4,7 +4,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { StoreProvider } from '@/app/stores/rootStore';
+import { StoreProvider } from '@/stores/rootStore';
 
 SplashScreen.preventAutoHideAsync();
 

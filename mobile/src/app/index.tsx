@@ -17,14 +17,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { listRetainers } from '@/api/client';
 import { getQueryErrorMessage } from '@/api/errors';
 import { queryKeys } from '@/api/queryKeys';
-import { useRootStore } from '@/app/stores/rootStore';
-import type { HealthFilter, RetainerListSortMode } from '@/app/stores/retainerListStore';
 import { EmptyState, ErrorState, InlineErrorState, LoadingState } from '@/components/screen-state';
 import { StatusBadge } from '@/components/status-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import type { HealthFilter, RetainerListSortMode } from '@/stores/retainerListStore';
+import { useRootStore } from '@/stores/rootStore';
 import type { RetainerSummary } from '@/types/api';
 
 const healthFilters: HealthFilter[] = ['all', 'red', 'amber', 'green'];

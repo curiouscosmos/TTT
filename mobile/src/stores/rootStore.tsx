@@ -1,6 +1,6 @@
 import { createContext, PropsWithChildren, useContext, useMemo } from 'react';
 
-import { RetainerListStore } from '@/app/stores/retainerListStore';
+import { RetainerListStore } from '@/stores/retainerListStore';
 
 class RootStore {
   // State ownership: MobX keeps client-only UI preferences; TanStack Query owns
