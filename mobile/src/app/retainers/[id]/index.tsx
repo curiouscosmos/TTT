@@ -190,7 +190,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <ThemedText type="small" themeColor="textSecondary">
         {label}
       </ThemedText>
-      <ThemedText>{value}</ThemedText>
+      <ThemedText style={{textTransform: 'capitalize'}}>{value}</ThemedText>
     </View>
   );
 }

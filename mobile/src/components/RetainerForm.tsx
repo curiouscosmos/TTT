@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: Spacing.three,
-    padding: Spacing.three,
+    paddingTop: Spacing.three,
     paddingBottom: Spacing.five,
   },
   statusRow: {
