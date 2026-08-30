@@ -18,18 +18,22 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 type RetainerFormProps = {
+  cancelLabel?: string;
   defaultValues: RetainerFormValues;
   isSubmitting: boolean;
   serverError?: string;
   submitLabel: string;
+  onCancel?: (isDirty: boolean) => void;
   onSubmit: (values: RetainerFormValues) => void;
 };
 
 const statuses: RetainerFormValues['status'][] = ['active', 'archived'];
 
 export function RetainerForm({
+  cancelLabel = 'Cancel',
   defaultValues,
   isSubmitting,
+  onCancel,
   serverError,
   submitLabel,
   onSubmit,
@@ -37,8 +41,10 @@ export function RetainerForm({
   const {
     control,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<RetainerFormValues>({
+    // Edit waits for its query before mounting this form, so async defaults are
+    // applied once without resetting user edits during later query refetches.
     defaultValues,
     resolver: zodResolver(RetainerFormSchema),
   });
@@ -154,6 +160,9 @@ export function RetainerForm({
               disabled={isSubmitting}
               onPress={handleSubmit(onSubmit)}
             />
+            {onCancel ? (
+              <SecondaryButton label={cancelLabel} onPress={() => onCancel(isDirty)} />
+            ) : null}
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -236,6 +245,19 @@ function SubmitButton({
       <ThemedText type="smallBold" style={{ color: theme.background }}>
         {label}
       </ThemedText>
+    </Pressable>
+  );
+}
+
+function SecondaryButton({ label, onPress }: { label: string; onPress: () => void }) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[styles.submitButton, { backgroundColor: theme.backgroundElement }]}>
+      <ThemedText type="smallBold">{label}</ThemedText>
     </Pressable>
   );
 }

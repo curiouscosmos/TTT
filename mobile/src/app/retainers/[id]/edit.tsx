@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getRetainer, updateRetainer } from '@/api/client';
@@ -24,13 +24,31 @@ export default function EditRetainerScreen() {
   const mutation = useMutation({
     mutationFn: (values: RetainerFormValues) => updateRetainer(id ?? '', values),
     onSuccess: async (retainer) => {
+      // Detail shows the edited record, lists show edited summary fields, and
+      // at-risk displays overlapping summary data. Invalidate all three instead
+      // of maintaining duplicate client-side caches.
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.retainers.lists() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.retainers.detail(retainer.id) }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.retainers.lists() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.retainers.atRisk }),
       ]);
-      router.replace({ pathname: '/retainers/[id]', params: { id: retainer.id } });
+      router.back();
     },
   });
+
+  function handleCancel(isDirty: boolean) {
+    if (!isDirty) {
+      router.back();
+      return;
+    }
+
+    // This covers the explicit Cancel path without building a full navigation
+    // blocker for hardware/header back gestures.
+    Alert.alert('Discard changes?', 'Your edits have not been saved.', [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: () => router.back() },
+    ]);
+  }
 
   if (!id) {
     return (
@@ -70,8 +88,11 @@ export default function EditRetainerScreen() {
         startDate: toDateInputValue(query.data.startDate),
         status: query.data.status,
       }}
+      cancelLabel="Cancel"
       isSubmitting={mutation.isPending}
+      serverError={mutation.error instanceof Error ? mutation.error.message : undefined}
       submitLabel="Save Retainer"
+      onCancel={handleCancel}
       onSubmit={(values) => mutation.mutate(values)}
     />
   );
