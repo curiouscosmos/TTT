@@ -1,6 +1,6 @@
 import { PropsWithChildren } from 'react';
 import { StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -8,10 +8,13 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 export function ScreenShell({
   children,
   padded = true,
-}: PropsWithChildren<{ padded?: boolean }>) {
+  safeAreaEdges = [],
+}: PropsWithChildren<{ padded?: boolean; safeAreaEdges?: Edge[] }>) {
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={[styles.safeArea, padded && styles.padded]}>{children}</SafeAreaView>
+      <SafeAreaView edges={safeAreaEdges} style={[styles.safeArea, padded && styles.padded]}>
+        {children}
+      </SafeAreaView>
     </ThemedView>
   );
 }

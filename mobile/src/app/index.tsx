@@ -98,6 +98,33 @@ const RetainerListScreen = observer(function RetainerListScreen() {
     setIsFilterModalOpen(false);
   }, [filterDraft, retainerList]);
 
+  const searchRetainers = () => {
+    return (
+        <View style={styles.header}>
+          <TextInput
+              accessibilityLabel="Search retainers"
+              placeholder="Search clients or leads"
+              placeholderTextColor={theme.textSecondary}
+              value={retainerList.searchText}
+              onChangeText={retainerList.setSearchText}
+              style={[
+                styles.searchInput,
+                {
+                  backgroundColor: theme.backgroundElement,
+                  color: theme.text,
+                },
+              ]}
+          />
+          <View style={styles.headerActions}>
+            <Button label="Filter & Sort" onPress={openFilterModal} />
+            {retainerList.hasActiveFilters ? (
+                <Button label="Clear" onPress={retainerList.resetFilters} variant="secondary" />
+            ) : null}
+          </View>
+        </View>
+    );
+  }
+
   // TanStack Query v5 can be fetching with cached data. isPending is the
   // initial no-data state; isFetching below is only non-blocking background work.
   if (isPending) {
@@ -122,30 +149,6 @@ const RetainerListScreen = observer(function RetainerListScreen() {
 
   return (
     <ScreenShell padded>
-      <View style={styles.header}>
-        <ThemedText type="subtitle">Retainers</ThemedText>
-        <TextInput
-          accessibilityLabel="Search retainers"
-          placeholder="Search clients or leads"
-          placeholderTextColor={theme.textSecondary}
-          value={retainerList.searchText}
-          onChangeText={retainerList.setSearchText}
-          style={[
-            styles.searchInput,
-            {
-              backgroundColor: theme.backgroundElement,
-              color: theme.text,
-            },
-          ]}
-        />
-        <View style={styles.headerActions}>
-          <Button label="Filter & Sort" onPress={openFilterModal} />
-          {retainerList.hasActiveFilters ? (
-            <Button label="Clear" onPress={retainerList.resetFilters} variant="secondary" />
-          ) : null}
-        </View>
-      </View>
-
       <FlatList
         data={visibleRetainers}
         keyExtractor={keyExtractor}
@@ -165,13 +168,18 @@ const RetainerListScreen = observer(function RetainerListScreen() {
           )
         }
         ListHeaderComponent={
-          error && data.length > 0 ? (
-            <InlineErrorState message={getQueryErrorMessage(error)} onRetry={() => void refetch()} />
-          ) : isFetching && !isRefreshing ? (
-            <ThemedText type="small" themeColor="textSecondary" style={styles.backgroundStatus}>
-              Refreshing...
-            </ThemedText>
-          ) : null
+          <>
+            {searchRetainers()}
+            {
+              error && data.length > 0 ? (
+                  <InlineErrorState message={getQueryErrorMessage(error)} onRetry={() => void refetch()} />
+              ) : isFetching && !isRefreshing ? (
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.backgroundStatus}>
+                    Refreshing...
+                  </ThemedText>
+              ) : null
+            }
+          </>
         }
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
         initialNumToRender={12}
@@ -194,7 +202,7 @@ export default RetainerListScreen;
 const styles = StyleSheet.create({
   header: {
     gap: Spacing.three,
-    paddingVertical: Spacing.three,
+    marginVertical: Spacing.five,
   },
   searchInput: {
     minHeight: 48,
