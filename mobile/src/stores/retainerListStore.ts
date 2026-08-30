@@ -15,7 +15,7 @@ export class RetainerListStore {
   sortMode: RetainerListSortMode = 'health';
 
   constructor() {
-    makeAutoObservable(this);
+    makeAutoObservable(this, {}, { autoBind: true });
   }
 
   // These are local list controls, not server state. Query responses must stay
