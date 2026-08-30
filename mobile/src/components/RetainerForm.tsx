@@ -20,6 +20,7 @@ import { useTheme } from '@/hooks/use-theme';
 type RetainerFormProps = {
   defaultValues: RetainerFormValues;
   isSubmitting: boolean;
+  serverError?: string;
   submitLabel: string;
   onSubmit: (values: RetainerFormValues) => void;
 };
@@ -29,6 +30,7 @@ const statuses: RetainerFormValues['status'][] = ['active', 'archived'];
 export function RetainerForm({
   defaultValues,
   isSubmitting,
+  serverError,
   submitLabel,
   onSubmit,
 }: RetainerFormProps) {
@@ -140,6 +142,13 @@ export function RetainerForm({
             <ThemedText type="small" themeColor="textSecondary">
               Client validation keeps obvious mistakes local; the API still validates every write.
             </ThemedText>
+            {serverError ? (
+              // The current API returns message-level errors, not field-level paths,
+              // so server failures are shown at the form level.
+              <ThemedText type="small" style={styles.errorText}>
+                {serverError}
+              </ThemedText>
+            ) : null}
             <SubmitButton
               label={isSubmitting ? 'Saving...' : submitLabel}
               disabled={isSubmitting}
