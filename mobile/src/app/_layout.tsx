@@ -31,7 +31,7 @@ export default function RootLayout() {
           <AnimatedSplashOverlay />
           {/* Expo Router maps these file names to routes; nested files under retainers/[id]
               are detail-flow screens, so a Stack is the smallest useful navigator here. */}
-          <Stack>
+          <Stack screenOptions={{ headerBackTitle: '' }}>
             <Stack.Screen name="index" options={{ title: 'Retainers' }} />
             <Stack.Screen name="at-risk" options={{ title: 'At-Risk' }} />
             <Stack.Screen name="retainers/new" options={{ title: 'Create Retainer' }} />
