@@ -12,3 +12,7 @@ export function todayDateInputValue() {
 
   return `${year}-${month}-${day}`;
 }
+
+export function toDateInputValue(date: string) {
+  return date.slice(0, 10);
+}

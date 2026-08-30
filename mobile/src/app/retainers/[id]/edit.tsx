@@ -9,6 +9,7 @@ import { RetainerForm } from '@/components/RetainerForm';
 import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import type { RetainerFormValues } from '@/schemas/retainerForm';
+import { toDateInputValue } from '@/utils/date';
 
 export default function EditRetainerScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
@@ -96,8 +97,4 @@ export default function EditRetainerScreen() {
       onSubmit={(values) => mutation.mutate(values)}
     />
   );
-}
-
-function toDateInputValue(date: string) {
-  return date.slice(0, 10);
 }
