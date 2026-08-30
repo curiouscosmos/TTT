@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createCheckIn } from '@/api/client';
+import { getMutationErrorMessage } from '@/api/errors';
 import { queryKeys } from '@/api/queryKeys';
 import { EmptyState } from '@/components/screen-state';
 import { ThemedText } from '@/components/themed-text';
@@ -165,7 +166,7 @@ export default function AddCheckInScreen() {
           />
           {mutation.error ? (
             <ThemedText type="small" style={styles.errorText}>
-              {mutation.error instanceof Error ? mutation.error.message : 'Something went wrong.'}
+              {getMutationErrorMessage(mutation.error)}
             </ThemedText>
           ) : null}
           <SubmitButton

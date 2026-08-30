@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getRetainer } from '@/api/client';
+import { getQueryErrorMessage } from '@/api/errors';
 import { queryKeys } from '@/api/queryKeys';
 import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
 import { StatusBadge } from '@/components/status-badge';
@@ -45,7 +46,9 @@ export default function RetainerDetailScreen() {
       <ScreenShell>
         <ErrorState
           title="Could not load retainer"
-          message={error instanceof Error ? error.message : 'Something went wrong.'}
+          message={getQueryErrorMessage(error, {
+            notFoundMessage: 'The requested retainer could not be found.',
+          })}
           onRetry={() => void refetch()}
         />
       </ScreenShell>

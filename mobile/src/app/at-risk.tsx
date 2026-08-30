@@ -5,6 +5,7 @@ import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listAtRiskRetainers } from '@/api/client';
+import { getQueryErrorMessage } from '@/api/errors';
 import { queryKeys } from '@/api/queryKeys';
 import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
 import { StatusBadge } from '@/components/status-badge';
@@ -53,7 +54,7 @@ export default function AtRiskScreen() {
       <ScreenShell>
         <ErrorState
           title="Could not load at-risk retainers"
-          message={error instanceof Error ? error.message : 'Something went wrong.'}
+          message={getQueryErrorMessage(error)}
           onRetry={() => void refetch()}
         />
       </ScreenShell>

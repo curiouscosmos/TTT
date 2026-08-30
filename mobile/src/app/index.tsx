@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listRetainers } from '@/api/client';
+import { getQueryErrorMessage } from '@/api/errors';
 import { queryKeys } from '@/api/queryKeys';
 import { useRootStore } from '@/app/stores/rootStore';
 import type { HealthFilter, RetainerListSortMode } from '@/app/stores/retainerListStore';
@@ -145,7 +146,7 @@ const RetainerListScreen = observer(function RetainerListScreen() {
       <ScreenShell>
         <ErrorState
           title="Could not load retainers"
-          message={error instanceof Error ? error.message : 'Something went wrong.'}
+          message={getQueryErrorMessage(error)}
           onRetry={() => void refetch()}
         />
       </ScreenShell>

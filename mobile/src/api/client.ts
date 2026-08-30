@@ -1,3 +1,4 @@
+import { ApiError, NetworkError } from '@/api/errors';
 import { env } from '@/config/env';
 import type {
   AtRiskRetainer,
@@ -19,36 +20,34 @@ type ServerErrorBody = {
 
 const API_PREFIX = '/api/v1';
 
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly body?: unknown,
-  ) {
-    super(message);
-    this.name = 'ApiError';
-  }
-}
-
 export async function apiRequest<TResponse, TBody = never>(
   path: string,
   options: Omit<ApiRequestOptions, 'body'> & { body?: TBody } = {},
 ): Promise<TResponse> {
-  const response = await fetch(`${env.apiUrl}${API_PREFIX}${path}`, {
-    ...options,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${env.apiUrl}${API_PREFIX}${path}`, {
+      ...options,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    });
+  } catch {
+    // Network errors mean fetch never received an HTTP response. API errors
+    // below mean the server responded with a non-2xx status and optional JSON.
+    throw new NetworkError();
+  }
+
   const body = await parseJson(response);
 
   if (!response.ok) {
     // Normalize HTTP failures here so query hooks and screens can handle one
     // typed error shape while still showing backend validation/not-found text.
-    throw new ApiError(getErrorMessage(body, response.status), response.status, body);
+    throw new ApiError(getErrorMessage(body), response.status, body);
   }
 
   return body as TResponse;
@@ -94,15 +93,19 @@ async function parseJson(response: Response): Promise<unknown> {
     return null;
   }
 
-  return JSON.parse(text) as unknown;
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
 }
 
-function getErrorMessage(body: unknown, status: number) {
+function getErrorMessage(body: unknown) {
   if (isServerErrorBody(body) && body.message) {
     return body.message;
   }
 
-  return `API request failed: ${status}`;
+  return '';
 }
 
 function isServerErrorBody(body: unknown): body is ServerErrorBody {

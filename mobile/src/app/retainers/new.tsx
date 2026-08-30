@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 
 import { createRetainer } from '@/api/client';
+import { getMutationErrorMessage } from '@/api/errors';
 import { queryKeys } from '@/api/queryKeys';
 import { RetainerForm } from '@/components/RetainerForm';
 import type { RetainerFormValues } from '@/schemas/retainerForm';
@@ -30,7 +31,7 @@ export default function CreateRetainerScreen() {
     <RetainerForm
       defaultValues={defaultValues}
       isSubmitting={mutation.isPending}
-      serverError={mutation.error instanceof Error ? mutation.error.message : undefined}
+      serverError={mutation.error ? getMutationErrorMessage(mutation.error) : undefined}
       submitLabel="Create Retainer"
       onSubmit={(values) => mutation.mutate(values)}
     />

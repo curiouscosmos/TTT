@@ -4,6 +4,7 @@ import { Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getRetainer, updateRetainer } from '@/api/client';
+import { getMutationErrorMessage, getQueryErrorMessage } from '@/api/errors';
 import { queryKeys } from '@/api/queryKeys';
 import { RetainerForm } from '@/components/RetainerForm';
 import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
@@ -70,7 +71,9 @@ export default function EditRetainerScreen() {
       <ScreenShell>
         <ErrorState
           title="Could not load retainer"
-          message={query.error instanceof Error ? query.error.message : 'Something went wrong.'}
+          message={getQueryErrorMessage(query.error, {
+            notFoundMessage: 'The requested retainer could not be found.',
+          })}
           onRetry={() => void query.refetch()}
         />
       </ScreenShell>
@@ -89,7 +92,7 @@ export default function EditRetainerScreen() {
       }}
       cancelLabel="Cancel"
       isSubmitting={mutation.isPending}
-      serverError={mutation.error instanceof Error ? mutation.error.message : undefined}
+      serverError={mutation.error ? getMutationErrorMessage(mutation.error) : undefined}
       submitLabel="Save Retainer"
       onCancel={handleCancel}
       onSubmit={(values) => mutation.mutate(values)}
