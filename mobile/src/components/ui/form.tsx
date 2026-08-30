@@ -48,8 +48,10 @@ export const formStyles = StyleSheet.create({
   },
   multilineInput: {
     minHeight: 96,
-    paddingTop: Spacing.three,
+    padding: Spacing.three,
     textAlignVertical: 'top',
+    backgroundColor: '#eee',
+    borderRadius: 8,
   },
 });
 

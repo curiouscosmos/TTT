@@ -81,7 +81,6 @@ export default function AddCheckInScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardAvoider}>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-          <ThemedText type="subtitle">Add Check-in</ThemedText>
           <Controller
             control={control}
             name="date"
