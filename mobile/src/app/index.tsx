@@ -84,7 +84,8 @@ const RetainerListScreen = observer(function RetainerListScreen() {
           retainer.clientName.toLowerCase().includes(search) ||
           retainer.leadEngineer.toLowerCase().includes(search),
       )
-      .toSorted((a, b) => compareRetainers(a, b, retainerList.sortMode));
+      .slice()
+      .sort((a, b) => compareRetainers(a, b, retainerList.sortMode));
   }, [
     data,
     retainerList.healthFilter,
