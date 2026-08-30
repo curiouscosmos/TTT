@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getRetainer } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
+import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
+import { StatusBadge } from '@/components/status-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -25,7 +27,7 @@ export default function RetainerDetailScreen() {
   if (!id) {
     return (
       <ScreenShell>
-        <StateView title="Missing retainer" message="This route needs a retainer id." />
+        <EmptyState title="Missing retainer" message="This route needs a retainer id." />
       </ScreenShell>
     );
   }
@@ -33,7 +35,7 @@ export default function RetainerDetailScreen() {
   if (isLoading) {
     return (
       <ScreenShell>
-        <StateView title="Loading retainer..." icon={<ActivityIndicator />} />
+        <LoadingState message="Loading retainer..." />
       </ScreenShell>
     );
   }
@@ -41,10 +43,10 @@ export default function RetainerDetailScreen() {
   if (error || !data) {
     return (
       <ScreenShell>
-        <StateView
+        <ErrorState
           title="Could not load retainer"
           message={error instanceof Error ? error.message : 'Something went wrong.'}
-          action={<Button label="Retry" onPress={() => void refetch()} />}
+          onRetry={() => void refetch()}
         />
       </ScreenShell>
     );
@@ -112,39 +114,12 @@ function ScreenShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function StateView({
-  title,
-  message,
-  icon,
-  action,
-}: {
-  title: string;
-  message?: string;
-  icon?: React.ReactNode;
-  action?: React.ReactNode;
-}) {
-  return (
-    <View style={styles.centerState}>
-      {icon}
-      <ThemedText type="subtitle" style={styles.centerText}>
-        {title}
-      </ThemedText>
-      {message ? (
-        <ThemedText themeColor="textSecondary" style={styles.centerText}>
-          {message}
-        </ThemedText>
-      ) : null}
-      {action}
-    </View>
-  );
-}
-
 function HealthPanel({ status, reason }: { status: HealthStatus; reason: string }) {
   const theme = useTheme();
 
   return (
     <View style={[styles.healthPanel, { backgroundColor: theme.backgroundElement }]}>
-      <HealthBadge status={status} />
+      <StatusBadge kind="health" status={status} />
       <ThemedText type="smallBold">Health</ThemedText>
       {/* Health is computed by the API so the mobile client does not duplicate
           backend rules or drift from server behavior. */}
@@ -160,7 +135,7 @@ function CheckInCard({ checkIn }: { checkIn: CheckIn }) {
     <View style={[styles.checkInCard, { backgroundColor: theme.backgroundElement }]}>
       <View style={styles.checkInHeader}>
         <ThemedText type="smallBold">{formatDate(checkIn.date)}</ThemedText>
-        <HealthBadge status={checkIn.ragStatus} />
+        <StatusBadge kind="rag" status={checkIn.ragStatus} />
       </View>
       <ThemedText>{checkIn.summary}</ThemedText>
       {checkIn.riskNote ? (
@@ -179,16 +154,6 @@ function InfoRow({ label, value }: { label: string; value: string }) {
         {label}
       </ThemedText>
       <ThemedText>{value}</ThemedText>
-    </View>
-  );
-}
-
-function HealthBadge({ status }: { status: HealthStatus }) {
-  return (
-    <View style={[styles.badge, styles[`${status}Badge`]]}>
-      <ThemedText type="code" style={styles.badgeText}>
-        {status.toUpperCase()}
-      </ThemedText>
     </View>
   );
 }
@@ -268,38 +233,10 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     justifyContent: 'space-between',
   },
-  badge: {
-    alignSelf: 'flex-start',
-    borderRadius: 6,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-  },
-  greenBadge: {
-    backgroundColor: '#148a48',
-  },
-  amberBadge: {
-    backgroundColor: '#a46300',
-  },
-  redBadge: {
-    backgroundColor: '#c12a2a',
-  },
-  badgeText: {
-    color: '#ffffff',
-  },
   button: {
     minHeight: 44,
     borderRadius: 8,
     justifyContent: 'center',
     paddingHorizontal: Spacing.three,
-  },
-  centerState: {
-    flex: 1,
-    alignItems: 'center',
-    gap: Spacing.three,
-    justifyContent: 'center',
-    padding: Spacing.four,
-  },
-  centerText: {
-    textAlign: 'center',
   },
 });

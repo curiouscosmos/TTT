@@ -1,16 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useCallback } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listAtRiskRetainers } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
+import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
+import { StatusBadge } from '@/components/status-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { AtRiskRetainer, HealthStatus } from '@/types/api';
+import type { AtRiskRetainer } from '@/types/api';
 
 export default function AtRiskScreen() {
   const { data = [], error, isLoading, isRefetching, refetch } = useQuery({
@@ -41,10 +43,7 @@ export default function AtRiskScreen() {
   if (isLoading) {
     return (
       <ScreenShell>
-        <View style={styles.centerState}>
-          <ActivityIndicator />
-          <ThemedText themeColor="textSecondary">Loading at-risk retainers...</ThemedText>
-        </View>
+        <LoadingState message="Loading at-risk retainers..." />
       </ScreenShell>
     );
   }
@@ -52,15 +51,11 @@ export default function AtRiskScreen() {
   if (error) {
     return (
       <ScreenShell>
-        <View style={styles.centerState}>
-          <ThemedText type="subtitle" style={styles.centerText}>
-            Could not load at-risk retainers
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.centerText}>
-            {error instanceof Error ? error.message : 'Something went wrong.'}
-          </ThemedText>
-          <Button label="Retry" onPress={() => void refetch()} />
-        </View>
+        <ErrorState
+          title="Could not load at-risk retainers"
+          message={error instanceof Error ? error.message : 'Something went wrong.'}
+          onRetry={() => void refetch()}
+        />
       </ScreenShell>
     );
   }
@@ -79,13 +74,7 @@ export default function AtRiskScreen() {
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={Separator}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <ThemedText type="smallBold" style={styles.centerText}>
-              No retainers currently need attention.
-            </ThemedText>
-          </View>
-        }
+        ListEmptyComponent={<EmptyState title="No retainers currently need attention." />}
         refreshing={isRefetching && !isLoading}
         onRefresh={onRefresh}
         initialNumToRender={12}
@@ -123,7 +112,7 @@ function AtRiskRow({ retainer, onPress }: { retainer: AtRiskRetainer; onPress: (
         <ThemedText type="smallBold" style={styles.clientName}>
           {retainer.clientName}
         </ThemedText>
-        <HealthBadge status={retainer.health.status} />
+        <StatusBadge kind="health" status={retainer.health.status} />
       </View>
       <ThemedText>{retainer.health.reason}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
@@ -131,31 +120,6 @@ function AtRiskRow({ retainer, onPress }: { retainer: AtRiskRetainer; onPress: (
       </ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
         Lead: {retainer.leadEngineer}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
-function HealthBadge({ status }: { status: HealthStatus }) {
-  return (
-    <View style={[styles.badge, styles[`${status}Badge`]]}>
-      <ThemedText type="code" style={styles.badgeText}>
-        {status.toUpperCase()}
-      </ThemedText>
-    </View>
-  );
-}
-
-function Button({ label, onPress }: { label: string; onPress: () => void }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={[styles.button, { backgroundColor: theme.text }]}>
-      <ThemedText type="smallBold" style={{ color: theme.background }}>
-        {label}
       </ThemedText>
     </Pressable>
   );
@@ -202,48 +166,8 @@ const styles = StyleSheet.create({
   clientName: {
     flex: 1,
   },
-  badge: {
-    alignSelf: 'flex-start',
-    borderRadius: 6,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-  },
-  greenBadge: {
-    backgroundColor: '#148a48',
-  },
-  amberBadge: {
-    backgroundColor: '#a46300',
-  },
-  redBadge: {
-    backgroundColor: '#c12a2a',
-  },
-  badgeText: {
-    color: '#ffffff',
-  },
   separator: {
     height: Spacing.two,
-  },
-  button: {
-    borderRadius: 8,
-    justifyContent: 'center',
-    minHeight: 44,
-    paddingHorizontal: Spacing.three,
-  },
-  centerState: {
-    flex: 1,
-    alignItems: 'center',
-    gap: Spacing.three,
-    justifyContent: 'center',
-    padding: Spacing.four,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Spacing.four,
   },
   pressed: {
     opacity: 0.75,

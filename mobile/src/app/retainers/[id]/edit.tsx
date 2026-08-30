@@ -1,15 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getRetainer, updateRetainer } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
 import { RetainerForm } from '@/components/RetainerForm';
-import { ThemedText } from '@/components/themed-text';
+import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
 import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { MaxContentWidth } from '@/constants/theme';
 import type { RetainerFormValues } from '@/schemas/retainerForm';
 
 export default function EditRetainerScreen() {
@@ -53,7 +52,7 @@ export default function EditRetainerScreen() {
   if (!id) {
     return (
       <ScreenShell>
-        <StateView title="Missing retainer" message="This route needs a retainer id." />
+        <EmptyState title="Missing retainer" message="This route needs a retainer id." />
       </ScreenShell>
     );
   }
@@ -61,7 +60,7 @@ export default function EditRetainerScreen() {
   if (query.isLoading) {
     return (
       <ScreenShell>
-        <StateView title="Loading retainer..." icon={<ActivityIndicator />} />
+        <LoadingState message="Loading retainer..." />
       </ScreenShell>
     );
   }
@@ -69,10 +68,10 @@ export default function EditRetainerScreen() {
   if (query.error || !query.data) {
     return (
       <ScreenShell>
-        <StateView
+        <ErrorState
           title="Could not load retainer"
           message={query.error instanceof Error ? query.error.message : 'Something went wrong.'}
-          action={<Button label="Retry" onPress={() => void query.refetch()} />}
+          onRetry={() => void query.refetch()}
         />
       </ScreenShell>
     );
@@ -106,48 +105,6 @@ function ScreenShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function StateView({
-  title,
-  message,
-  icon,
-  action,
-}: {
-  title: string;
-  message?: string;
-  icon?: React.ReactNode;
-  action?: React.ReactNode;
-}) {
-  return (
-    <View style={styles.centerState}>
-      {icon}
-      <ThemedText type="subtitle" style={styles.centerText}>
-        {title}
-      </ThemedText>
-      {message ? (
-        <ThemedText themeColor="textSecondary" style={styles.centerText}>
-          {message}
-        </ThemedText>
-      ) : null}
-      {action}
-    </View>
-  );
-}
-
-function Button({ label, onPress }: { label: string; onPress: () => void }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={[styles.button, { backgroundColor: theme.text }]}>
-      <ThemedText type="smallBold" style={{ color: theme.background }}>
-        {label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
 function toDateInputValue(date: string) {
   return date.slice(0, 10);
 }
@@ -161,21 +118,5 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     maxWidth: MaxContentWidth,
-  },
-  centerState: {
-    flex: 1,
-    alignItems: 'center',
-    gap: Spacing.three,
-    justifyContent: 'center',
-    padding: Spacing.four,
-  },
-  centerText: {
-    textAlign: 'center',
-  },
-  button: {
-    borderRadius: 8,
-    justifyContent: 'center',
-    minHeight: 44,
-    paddingHorizontal: Spacing.three,
   },
 });

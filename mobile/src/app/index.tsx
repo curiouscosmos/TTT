@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import { observer } from 'mobx-react-lite';
 import { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Modal,
   Pressable,
@@ -18,6 +17,8 @@ import { listRetainers } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
 import { useRootStore } from '@/app/stores/rootStore';
 import type { HealthFilter, RetainerListSortMode } from '@/app/stores/retainerListStore';
+import { EmptyState, ErrorState, LoadingState } from '@/components/screen-state';
+import { StatusBadge } from '@/components/status-badge';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -134,10 +135,7 @@ const RetainerListScreen = observer(function RetainerListScreen() {
   if (isLoading) {
     return (
       <ScreenShell>
-        <View style={styles.centerState}>
-          <ActivityIndicator />
-          <ThemedText themeColor="textSecondary">Loading retainers...</ThemedText>
-        </View>
+        <LoadingState message="Loading retainers..." />
       </ScreenShell>
     );
   }
@@ -145,15 +143,11 @@ const RetainerListScreen = observer(function RetainerListScreen() {
   if (error) {
     return (
       <ScreenShell>
-        <View style={styles.centerState}>
-          <ThemedText type="subtitle" style={styles.centerText}>
-            Could not load retainers
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.centerText}>
-            {error instanceof Error ? error.message : 'Something went wrong.'}
-          </ThemedText>
-          <Button label="Retry" onPress={() => void refetch()} />
-        </View>
+        <ErrorState
+          title="Could not load retainers"
+          message={error instanceof Error ? error.message : 'Something went wrong.'}
+          onRetry={() => void refetch()}
+        />
       </ScreenShell>
     );
   }
@@ -197,7 +191,8 @@ const RetainerListScreen = observer(function RetainerListScreen() {
             <EmptyState
               title="No matches"
               message="Clear filters or adjust your search."
-              action={retainerList.hasActiveFilters ? retainerList.resetFilters : undefined}
+              actionLabel="Clear filters"
+              onAction={retainerList.hasActiveFilters ? retainerList.resetFilters : undefined}
             />
           )
         }
@@ -245,7 +240,7 @@ function RetainerRow({ retainer, onPress }: { retainer: RetainerSummary; onPress
         <ThemedText type="smallBold" style={styles.clientName}>
           {retainer.clientName}
         </ThemedText>
-        <HealthBadge status={retainer.health.status} />
+        <StatusBadge kind="health" status={retainer.health.status} />
       </View>
       <ThemedText type="small" themeColor="textSecondary">
         Lead: {retainer.leadEngineer}
@@ -254,16 +249,6 @@ function RetainerRow({ retainer, onPress }: { retainer: RetainerSummary; onPress
         Latest check-in: {formatDate(retainer.latestCheckInDate)}
       </ThemedText>
     </Pressable>
-  );
-}
-
-function HealthBadge({ status }: { status: Exclude<HealthFilter, 'all'> }) {
-  return (
-    <View style={[styles.badge, styles[`${status}Badge`]]}>
-      <ThemedText type="code" style={styles.badgeText}>
-        {status.toUpperCase()}
-      </ThemedText>
-    </View>
   );
 }
 
@@ -328,28 +313,6 @@ function ControlGroup<T extends string>({
     <View style={styles.controlGroup}>
       <ThemedText type="smallBold">{label}</ThemedText>
       <View style={styles.chipRow}>{values.map(children)}</View>
-    </View>
-  );
-}
-
-function EmptyState({
-  title,
-  message,
-  action,
-}: {
-  title: string;
-  message: string;
-  action?: () => void;
-}) {
-  return (
-    <View style={styles.emptyState}>
-      <ThemedText type="smallBold" style={styles.centerText}>
-        {title}
-      </ThemedText>
-      <ThemedText type="small" themeColor="textSecondary" style={styles.centerText}>
-        {message}
-      </ThemedText>
-      {action ? <Button label="Clear filters" onPress={action} /> : null}
     </View>
   );
 }
@@ -561,35 +524,8 @@ const styles = StyleSheet.create({
   clientName: {
     flex: 1,
   },
-  badge: {
-    borderRadius: 6,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-  },
-  greenBadge: {
-    backgroundColor: '#148a48',
-  },
-  amberBadge: {
-    backgroundColor: '#a46300',
-  },
-  redBadge: {
-    backgroundColor: '#c12a2a',
-  },
-  badgeText: {
-    color: '#ffffff',
-  },
   separator: {
     height: Spacing.two,
-  },
-  centerState: {
-    flex: 1,
-    alignItems: 'center',
-    gap: Spacing.three,
-    justifyContent: 'center',
-    padding: Spacing.four,
-  },
-  centerText: {
-    textAlign: 'center',
   },
   button: {
     minHeight: 44,
@@ -599,13 +535,6 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.75,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: 'center',
-    gap: Spacing.two,
-    justifyContent: 'center',
-    padding: Spacing.four,
   },
   modalRoot: {
     flex: 1,

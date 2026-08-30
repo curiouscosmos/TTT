@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createCheckIn } from '@/api/client';
 import { queryKeys } from '@/api/queryKeys';
+import { EmptyState } from '@/components/screen-state';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -62,14 +63,7 @@ export default function AddCheckInScreen() {
   if (!id) {
     return (
       <ScreenShell>
-        <View style={styles.centerState}>
-          <ThemedText type="subtitle" style={styles.centerText}>
-            Missing retainer
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.centerText}>
-            This route needs a retainer id.
-          </ThemedText>
-        </View>
+        <EmptyState title="Missing retainer" message="This route needs a retainer id." />
       </ScreenShell>
     );
   }
@@ -364,16 +358,6 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.6,
-  },
-  centerState: {
-    flex: 1,
-    alignItems: 'center',
-    gap: Spacing.three,
-    justifyContent: 'center',
-    padding: Spacing.four,
-  },
-  centerText: {
-    textAlign: 'center',
   },
   errorText: {
     color: '#c12a2a',
