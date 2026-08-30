@@ -61,7 +61,6 @@ export function FilterSortModal({
         />
         <View style={[styles.modalSheet, { backgroundColor: theme.background }]}>
           <View style={styles.modalHandle} />
-          <ThemedText type="subtitle">Filter & Sort</ThemedText>
           {/* Draft state lets Cancel discard modal edits; Apply is the only path
               that commits these local UI preferences into MobX. */}
           <ControlGroup label="Filter" values={healthFilters}>
@@ -74,7 +73,7 @@ export function FilterSortModal({
               />
             )}
           </ControlGroup>
-          <View style={styles.controlGroup}>
+          <View style={[styles.controlGroup, {marginTop: Spacing.three}]}>
             <ThemedText type="smallBold">Visibility</ThemedText>
             <SwitchRow
               label="Show Active"
@@ -144,6 +143,7 @@ function SwitchRow({
 
 const styles = StyleSheet.create({
   controlGroup: {
+    width: '100%',
     gap: Spacing.two,
   },
   chipRow: {
@@ -174,7 +174,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 16,
     gap: Spacing.three,
     maxHeight: '88%',
-    padding: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.six,
   },
   modalHandle: {
     alignSelf: 'center',
@@ -184,9 +186,10 @@ const styles = StyleSheet.create({
     width: 40,
   },
   modalActions: {
+    marginTop: Spacing.four,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
 });

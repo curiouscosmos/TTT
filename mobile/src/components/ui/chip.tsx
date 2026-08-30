@@ -24,7 +24,7 @@ export function Chip({
         styles.chip,
         { backgroundColor: selected ? theme.text : theme.backgroundElement },
       ]}>
-      <ThemedText type="small" style={{ color: selected ? theme.background : theme.text }}>
+      <ThemedText type="small" style={{ textTransform: 'capitalize', color: selected ? theme.background : theme.text }}>
         {label}
       </ThemedText>
     </Pressable>
@@ -34,6 +34,8 @@ export function Chip({
 const styles = StyleSheet.create({
   chip: {
     borderRadius: 8,
+    textAlign: 'center',
+    alignItems: 'center',
     justifyContent: 'center',
     minHeight: 44,
     paddingHorizontal: Spacing.three,
