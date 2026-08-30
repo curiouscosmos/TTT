@@ -119,16 +119,16 @@ function AtRiskRow({ retainer, onPress }: { retainer: AtRiskRetainer; onPress: (
         pressed && styles.pressed,
       ]}>
       <View style={styles.rowTop}>
-        <ThemedText type="smallBold" style={styles.clientName}>
+        <ThemedText type="smallBold" numberOfLines={1} style={styles.clientName}>
           {retainer.clientName}
         </ThemedText>
         <StatusBadge kind="health" status={retainer.health.status} />
       </View>
-      <ThemedText>{retainer.health.reason}</ThemedText>
+      <ThemedText numberOfLines={2}>{retainer.health.reason}</ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
         Latest check-in: {formatDate(retainer.latestCheckInDate)}
       </ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
+      <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
         Lead: {retainer.leadEngineer}
       </ThemedText>
     </Pressable>

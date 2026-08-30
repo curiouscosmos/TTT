@@ -252,12 +252,12 @@ function RetainerRow({ retainer, onPress }: { retainer: RetainerSummary; onPress
         pressed && styles.pressed,
       ]}>
       <View style={styles.rowTop}>
-        <ThemedText type="smallBold" style={styles.clientName}>
+        <ThemedText type="smallBold" numberOfLines={1} style={styles.clientName}>
           {retainer.clientName}
         </ThemedText>
         <StatusBadge kind="health" status={retainer.health.status} />
       </View>
-      <ThemedText type="small" themeColor="textSecondary">
+      <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
         Lead: {retainer.leadEngineer}
       </ThemedText>
       <ThemedText type="small" themeColor="textSecondary">
@@ -359,6 +359,7 @@ function FilterSortModal({
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
       <View style={styles.modalRoot}>
         <Pressable
+          accessibilityRole="button"
           accessibilityLabel="Close filter and sort"
           style={styles.modalBackdrop}
           onPress={onCancel}
