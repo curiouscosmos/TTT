@@ -2,55 +2,27 @@ import { useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { observer } from 'mobx-react-lite';
 import { useCallback, useMemo, useState } from 'react';
-import {
-  FlatList,
-  Modal,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Switch,
-  TextInput,
-  View,
-} from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 
 import { listRetainers } from '@/api/client';
 import { getQueryErrorMessage } from '@/api/errors';
 import { queryKeys } from '@/api/queryKeys';
+import {
+  defaultFilterDraft,
+  FilterSortModal,
+  type FilterDraft,
+} from '@/components/FilterSortModal';
+import { RetainerRow } from '@/components/RetainerRow';
 import { EmptyState, ErrorState, InlineErrorState, LoadingState } from '@/components/screen-state';
-import { StatusBadge } from '@/components/status-badge';
 import { ThemedText } from '@/components/themed-text';
 import { Button } from '@/components/ui/button';
-import { Chip } from '@/components/ui/chip';
 import { ScreenShell } from '@/components/ui/screen-shell';
 import { Separator } from '@/components/ui/separator';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { HealthFilter, RetainerListSortMode } from '@/stores/retainerListStore';
 import { useRootStore } from '@/stores/rootStore';
 import type { RetainerSummary } from '@/types/api';
-import { formatDate } from '@/utils/date';
-import { filterAndSortRetainers, sortLabel } from '@/utils/retainerList';
-
-const healthFilters: HealthFilter[] = ['all', 'red', 'amber', 'green'];
-const sortModes: RetainerListSortMode[] = [
-  'health',
-  'latestCheckInNewest',
-  'latestCheckInOldest',
-  'clientName',
-];
-type FilterDraft = {
-  healthFilter: HealthFilter;
-  showActive: boolean;
-  showArchived: boolean;
-  sortMode: RetainerListSortMode;
-};
-
-const defaultFilterDraft: FilterDraft = {
-  healthFilter: 'all',
-  showActive: true,
-  showArchived: false,
-  sortMode: 'health',
-};
+import { filterAndSortRetainers } from '@/utils/retainerList';
 
 const RetainerListScreen = observer(function RetainerListScreen() {
   const theme = useTheme();
@@ -219,146 +191,6 @@ const RetainerListScreen = observer(function RetainerListScreen() {
 
 export default RetainerListScreen;
 
-function RetainerRow({ retainer, onPress }: { retainer: RetainerSummary; onPress: () => void }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Open ${retainer.clientName}`}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        { backgroundColor: theme.backgroundElement },
-        pressed && styles.pressed,
-      ]}>
-      <View style={styles.rowTop}>
-        <ThemedText type="smallBold" numberOfLines={1} style={styles.clientName}>
-          {retainer.clientName}
-        </ThemedText>
-        <StatusBadge kind="health" status={retainer.health.status} />
-      </View>
-      <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
-        Lead: {retainer.leadEngineer}
-      </ThemedText>
-      <ThemedText type="small" themeColor="textSecondary">
-        Latest check-in: {formatDate(retainer.latestCheckInDate)}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
-function ControlGroup<T extends string>({
-  label,
-  values,
-  children,
-}: {
-  label: string;
-  values: T[];
-  children: (value: T) => React.ReactNode;
-}) {
-  return (
-    <View style={styles.controlGroup}>
-      <ThemedText type="smallBold">{label}</ThemedText>
-      <View style={styles.chipRow}>{values.map(children)}</View>
-    </View>
-  );
-}
-
-function FilterSortModal({
-  visible,
-  draft,
-  onChangeDraft,
-  onApply,
-  onCancel,
-}: {
-  visible: boolean;
-  draft: FilterDraft;
-  onChangeDraft: (draft: FilterDraft) => void;
-  onApply: () => void;
-  onCancel: () => void;
-}) {
-  const theme = useTheme();
-  const updateDraft = useCallback(
-    (patch: Partial<FilterDraft>) => onChangeDraft({ ...draft, ...patch }),
-    [draft, onChangeDraft],
-  );
-
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
-      <View style={styles.modalRoot}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Close filter and sort"
-          style={styles.modalBackdrop}
-          onPress={onCancel}
-        />
-        <View style={[styles.modalSheet, { backgroundColor: theme.background }]}>
-          <View style={styles.modalHandle} />
-          <ThemedText type="subtitle">Filter & Sort</ThemedText>
-          {/* Draft state lets Cancel discard modal edits; Apply is the only path
-              that commits these local UI preferences into MobX. */}
-          <ControlGroup label="Filter" values={healthFilters}>
-            {(value) => (
-              <Chip
-                key={value}
-                label={value}
-                selected={draft.healthFilter === value}
-                onPress={() => updateDraft({ healthFilter: value })}
-              />
-            )}
-          </ControlGroup>
-          <View style={styles.controlGroup}>
-            <ThemedText type="smallBold">Visibility</ThemedText>
-            <SwitchRow
-              label="Show Active"
-              value={draft.showActive}
-              onValueChange={(showActive) => updateDraft({ showActive })}
-            />
-            <SwitchRow
-              label="Show Archived"
-              value={draft.showArchived}
-              onValueChange={(showArchived) => updateDraft({ showArchived })}
-            />
-          </View>
-          <ControlGroup label="Sort" values={sortModes}>
-            {(value) => (
-              <Chip
-                key={value}
-                label={sortLabel(value)}
-                selected={draft.sortMode === value}
-                onPress={() => updateDraft({ sortMode: value })}
-              />
-            )}
-          </ControlGroup>
-          <View style={styles.modalActions}>
-            <Button label="Reset" onPress={() => onChangeDraft(defaultFilterDraft)} variant="secondary" />
-            <Button label="Cancel" onPress={onCancel} variant="secondary" />
-            <Button label="Apply" onPress={onApply} />
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-function SwitchRow({
-  label,
-  value,
-  onValueChange,
-}: {
-  label: string;
-  value: boolean;
-  onValueChange: (value: boolean) => void;
-}) {
-  return (
-    <View style={styles.switchRow}>
-      <ThemedText>{label}</ThemedText>
-      <Switch accessibilityLabel={label} value={value} onValueChange={onValueChange} />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   header: {
     gap: Spacing.three,
@@ -379,71 +211,8 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.two,
     textAlign: 'center',
   },
-  controlGroup: {
-    gap: Spacing.two,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  switchRow: {
-    minHeight: 44,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
   listContent: {
     flexGrow: 1,
     paddingBottom: Spacing.four,
-  },
-  row: {
-    borderRadius: 8,
-    gap: Spacing.one,
-    padding: Spacing.three,
-  },
-  rowTop: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: Spacing.two,
-    justifyContent: 'space-between',
-  },
-  clientName: {
-    flex: 1,
-  },
-  pressed: {
-    opacity: 0.75,
-  },
-  modalRoot: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalBackdrop: {
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
-  modalSheet: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    gap: Spacing.three,
-    maxHeight: '88%',
-    padding: Spacing.three,
-  },
-  modalHandle: {
-    alignSelf: 'center',
-    backgroundColor: '#999999',
-    borderRadius: 2,
-    height: 4,
-    width: 40,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-    justifyContent: 'flex-end',
   },
 });
